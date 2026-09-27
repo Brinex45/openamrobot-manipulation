@@ -1,6 +1,6 @@
 # DEVELOPMENT DEPENDENCY MANIFEST - fake-hardware baseline only.
 # Not the canonical release manifest (that belongs in openamrobot-manifest).
-# Not an accepted contract. Owner-adopted development-only baseline.
+# Not an accepted contract. Owner alignment pending review.
 #
 # vcstool format: vcs import --input openarm_v2.dev.repos <workspace>/src
 #
