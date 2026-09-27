@@ -1,6 +1,6 @@
 # OpenArm 2.0 inventory for the combined-model owner
 
-> **Status:** Owner-adopted development-only fake-hardware baseline.
+> **Status:** Founder-authorized Sunday preparation; owner alignment pending Monday review.
 > This draft is not an accepted contract or production implementation.
 > Recipient: `openamr-upperbody-sw` owner (Tushar), who owns the combined base + fixed mast + arms model.
 > This is an inventory only. It selects no mast position, invents no transforms and makes no payload, contact or stability claims.
@@ -71,16 +71,17 @@ Upstream nominal inertials are not measured values for the OpenAMRobot build.
 
 | Configuration ID | Status |
 |---|---|
-| `mast_1350` | Installed shoulder-axis height, 1350 mm (P-03 Decision Addendum revision 18.2, 28 September 2026) |
-| `mast_1300`, `mast_1400`, `mast_1450` | Indexed positions available for assessment; not installed without a recorded decision |
+| `mast_1300` | Plan working shoulder-axis baseline (1300 mm); in first release-candidate subset |
+| `mast_1350`, `mast_1400`, `mast_1450` | First release-candidate subset |
+| `mast_1500`, `mast_1550`, `mast_1600`, `mast_1650`, `mast_1700` | Listed configurations |
 
-The mast top is 1500 mm above the floor and the maximum assembled height is 1700 mm; positions above 1450 mm are not provided by the 2.0 mast. None of the four positions is validated by this work. The fixed mast is the 2.0 configuration; the lift is deferred to OpenAMRobot 3.0.
+None is selected or validated by this work. The fixed mast is the 2.0 configuration; the lift is deferred.
 
 ## 7. Missing inputs (no values guessed)
 
 1. **Shoulder-axis datum:** which OpenArm frame the "shoulder-axis height" refers to (`openarm_*_base_link` origin, the joint1 axis at +0.0625 m in Y, or the joint2 axis). This is needed before any mast ID can become a transform.
 2. **Base → mast → arm-mount transforms** for each `mast_*` ID: xyz/rpy of each arm base link relative to the mobile-base frame, including lateral spacing and mount orientation. The upstream value (±0.031 m, z 0.698 m on `openarm_body_link0`) describes Enactic's body, not the OpenAMRobot mast.
-3. **Body usage:** the combined OpenAMRobot 2.0 model uses the custom fixed mast without the OpenArm supplier body; the OpenArm J1_A plates are attached directly to the mast. The upstream OpenArm body is retained only as upstream-model context.
+3. **Body usage:** whether the combined model keeps `openarm_body_link0` or mounts the arms directly on the mast. Upstream single-arm presets exist, but none is chosen here.
 4. **Mast and base collision geometry**, and the allowed-collision matrix between mast, base and arms.
 5. **TCP definition** for OpenAMRobot tools, and whether the upstream grasp frame is adopted.
 6. **Measured mass/inertia** of the as-built arms, grippers and any tool; payload is not claimed.

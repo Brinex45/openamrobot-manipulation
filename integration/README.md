@@ -1,14 +1,10 @@
 # Integration: OpenArm 2.0 fake-hardware baseline
 
-> **Status:** Owner-adopted development-only fake-hardware baseline.
+> **Status:** Founder-authorized Sunday preparation; owner alignment pending Monday review.
 > This draft is not an accepted contract or production implementation.
 > Owners: Om Jagtap, Adnan Khalid. Reviewer: Mohamed Sayed.
 
 A development-only, headless bring-up of the **upstream** OpenArm 2.0 bimanual model and controllers on `ros2_control` mock hardware, plus tests. It adds no manipulation API and no Device Package format. It adds no safety logic and never drives physical hardware.
-
-## Workspace scope
-
-`integration/` carries a `COLCON_IGNORE` marker, so the package is **not** built by the default OpenAMRobot workspace created from `openamrobot-manifest`: that workspace does not contain the pinned upstream OpenArm repositories, and `rosdep` would fail on their keys. The baseline is built and tested only in the isolated development workspace created by `scripts/setup_workspace.sh`, which symlinks the package directory itself (the marker in the parent directory does not apply there). Adding the upstream repositories to the release manifest is a separate decision tracked in openamrobot-manifest issue #8.
 
 ## Package paths
 
