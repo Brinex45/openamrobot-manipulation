@@ -4,13 +4,13 @@ Shared arm-integration framework for the OpenAMRobot ecosystem. It provides the 
 
 > **Status:** OpenAMRobot 2.0 development / integration scaffold
 
-The OpenAMRobot 2.0 cycle is focused on integrating a real bimanual manipulation stack around **OpenArm 2.0** while preserving an arm-agnostic common API. **ReBot** is retained only as a secondary portability/API-validation target.
+The OpenAMRobot 2.0 cycle is focused on integrating a real bimanual manipulation stack around **OpenArm 2.0** while preserving an arm-agnostic common API. **LeRobot SO-101** is a secondary portability/API-validation fixture only.
 
 ## What lives here
 
 - **Manipulation server:** one arm-agnostic API for named poses, plan/preview/execute, stop, gripper control, Cartesian motion, contact-aware primitives, readiness, recovery and capability discovery.
 - **Device Package format:** a self-contained integration boundary for an arm/device: description, controllers, MoveIt configuration, capability manifest, diagnostics, UI/Blockly integration and LeRobot mapping.
-- **Reference Device Packages:** **OpenArm 2.0** as the primary physical manipulation path; **ReBot** as secondary portability/API validation.
+- **Reference Device Packages:** **OpenArm 2.0** as the primary physical manipulation path; **SO-101** as portability/API-validation fixture.
 - **Normalized execution semantics:** per-action timeout, typed failure results, constrained placement, bounded abort/retract behavior and controller-ownership handover.
 
 Software and common integration logic live here. Physical upper-body structure, mast and arm mounting belong in `openamr-upperbody-hw`; upper-body hardware-specific integration belongs in the corresponding `openamr-upperbody-*` repositories.
@@ -19,7 +19,7 @@ Software and common integration logic live here. Physical upper-body structure, 
 
 1. Implement a small, stable manipulation API over **MoveIt 2** and `ros2_control` / supported vendor interfaces.
 2. Integrate **OpenArm 2.0** as the primary physical Device Package using upstream/vendor software wherever practical rather than reimplementing drivers, kinematics or planning.
-3. Define the Device Package contract from the real OpenArm integration, then validate portability with **ReBot** without changing the common API.
+3. Define the Device Package contract from the real OpenArm integration, then validate portability on **SO-101** without changing the common API.
 4. Provide capability discovery so UI and higher-level applications do not hard-code vendor-specific arm behavior.
 5. Provide explicit readiness and controller-ownership states. In OpenAMRobot 2.0, the mobile base and active arm joints/end effectors do **not** move at the same time.
 6. Support the Embodied-AI workflow through a clean mapping to the project data/training layer, with **LeRobot** as the reference dataset and imitation-learning ecosystem.
@@ -40,7 +40,7 @@ For deterministic manipulation, use **MoveIt 2** for robot model, kinematics, pl
 
 - Arm-agnostic common API; vendor-specific code stays behind a Device Package.
 - **OpenArm 2.0 is the primary physical arm for the current release cycle.**
-- **ReBot is secondary portability/API validation only.**
+- **SO-101 is a portability/API-validation fixture.**
 - No vendor SDK calls from the UI.
 - No custom replacement for MoveIt planning where existing MoveIt functionality satisfies the requirement.
 - Base motion and active arm motion are mutually exclusive; readiness must be explicit and testable.
