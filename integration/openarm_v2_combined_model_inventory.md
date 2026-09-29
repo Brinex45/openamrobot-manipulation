@@ -71,11 +71,10 @@ Upstream nominal inertials are not measured values for the OpenAMRobot build.
 
 | Configuration ID | Status |
 |---|---|
-| `mast_1300` | Plan working shoulder-axis baseline (1300 mm); in first release-candidate subset |
-| `mast_1350`, `mast_1400`, `mast_1450` | First release-candidate subset |
-| `mast_1500`, `mast_1550`, `mast_1600`, `mast_1650`, `mast_1700` | Listed configurations |
+| `mast_1350` | Installed shoulder-axis height, 1350 mm (P-03 Decision Addendum revision 18.2, 28 September 2026) |
+| `mast_1300`, `mast_1400`, `mast_1450` | Indexed positions available for assessment; not installed without a recorded decision |
 
-None is selected or validated by this work. The fixed mast is the 2.0 configuration; the lift is deferred.
+The mast top is 1500 mm above the floor and the maximum assembled height is 1700 mm; positions above 1450 mm are not provided by the 2.0 mast. None of the four positions is validated by this work. The fixed mast is the 2.0 configuration; the lift is deferred to OpenAMRobot 3.0.
 
 ## 7. Missing inputs (no values guessed)
 
