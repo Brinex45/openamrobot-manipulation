@@ -1,0 +1,30 @@
+# DEVELOPMENT DEPENDENCY MANIFEST - fake-hardware baseline only.
+# Not the canonical release manifest (that belongs in openamrobot-manifest).
+# Not an accepted contract. Owner-adopted development-only baseline.
+#
+# vcstool format: vcs import --input openarm_v2.dev.repos <workspace>/src
+#
+# Both repositories are Apache-2.0, Copyright 2025-2026 Enactic, Inc.
+# They are cloned into a temporary workspace; no upstream source is copied
+# into this repository.
+#
+# OpenArm 2.0 support is on upstream main only; no release tag contains it
+# at pin time (latest tags: openarm_ros2 0.9.2, openarm_description 1.0.4).
+#
+# openarm_ros2/openarm_hardware (real CAN plugin, depends on openarm_can) and
+# the openarm meta-package are excluded from the fake build with COLCON_IGNORE
+# by scripts/setup_workspace.sh; openarm_can is intentionally not listed.
+
+repositories:
+  openarm_ros2:
+    type: git
+    url: https://github.com/enactic/openarm_ros2.git
+    # main @ 2026-06-29, "Bump actions/cache from 5 to 6 (#95)"; includes
+    # 01b9f38 "Support OpenArm 2.0 (#91)". git describe: 0.9.2-5-g4e837e1
+    version: 4e837e1d0dae692ff67b560b69d8d281d7a8d4ed
+  openarm_description:
+    type: git
+    url: https://github.com/enactic/openarm_description.git
+    # main @ 2026-09-09, "fix: preserve embedded DAE materials in v2.0 (#76)".
+    # git describe: 1.0.4-22-g14ff67b
+    version: 14ff67b638ff1c738a1b9a6be8aaa5ce5ed2c831
