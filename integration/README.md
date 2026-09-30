@@ -1,6 +1,6 @@
 # Integration: OpenArm 2.0 fake-hardware baseline
 
-> **Status:** Founder-authorized Sunday preparation; owner alignment pending Monday review.
+> **Status:** Owner-adopted development-only fake-hardware baseline.
 > This draft is not an accepted contract or production implementation.
 > Owners: Om Jagtap, Adnan Khalid. Reviewer: Mohamed Sayed.
 
