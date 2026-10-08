@@ -1,0 +1,97 @@
+# SO-101 Device Package manifest. DRAFT: values come from the current sim/fake fixture only.
+# Nothing here claims physical-hardware behaviour. "PENDING" = unresolved, not validated.
+schema_version: "0.5"
+i1_api_version: "1.0"
+
+device:
+  id: so101
+  name: SO-101
+  manufacturer: PENDING
+  model: SO-101
+  version: 0.1.0-draft
+  maintainer: PENDING
+  manipulators:
+    - {manipulator_id: 331fade9-f14b-5fdf-b804-be72d0f5f905, name: so101_arm, arm_dof: 5}
+  # No groups: LEFT / RIGHT / BIMANUAL are not applicable. Addressed by selector_type MANIPULATOR only.
+  configuration: {mounting: PENDING, base_frame: base_link}
+  workspace_envelope: PENDING
+  # rated_payload_kg omitted: not known -> rated_payload_kg_known = false
+
+driver:
+  name: PENDING
+  version: PENDING
+  config: driver/config.yaml
+  interface: PENDING
+  launch: PENDING
+  halt: PENDING
+
+ros2_control:
+  hardware: {plugin: PENDING, lifecycle: [configure, activate, deactivate]}
+  joints: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
+  manipulator_joints:
+    331fade9-f14b-5fdf-b804-be72d0f5f905: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll]
+  gripper_joints: [gripper]
+  command_interfaces: [position]
+  state_interfaces: [position]
+  controllers:
+    config: ros2_control/controllers.yaml
+    required_types: [joint_trajectory_controller/JointTrajectoryController]
+    instances:
+      arm: {name: arm_controller, type: joint_trajectory_controller/JointTrajectoryController}
+      gripper: {name: gripper_controller, type: PENDING}
+  fake_hardware: true
+
+moveit:
+  config_ref: moveit
+  planning_groups:
+    - {name: arm, role: ARM, maps_to: {manipulator_id: 331fade9-f14b-5fdf-b804-be72d0f5f905}}
+    - {name: gripper, role: END_EFFECTOR, maps_to: {manipulator_id: 331fade9-f14b-5fdf-b804-be72d0f5f905}}
+  named_poses:
+    - {selector: 331fade9-f14b-5fdf-b804-be72d0f5f905, poses: [home]}
+  kinematics: moveit/kinematics.yaml
+  joint_limits: moveit/joint_limits.yaml
+  end_effectors:
+    - {name: gripper, frame: gripper_frame_link, parent_group: arm}
+  # No stow_pose: STOW is not offered.
+
+gripper:
+  has_gripper: true
+  gripper_type: PENDING
+  gripper_id: PENDING
+  joint_count: 1
+  command_interfaces: [position]
+  state_interfaces: [position]
+  supported_commands: [OPEN, CLOSE, GOTO_POSITION]
+  reports_effort: PENDING
+  contact_detection: PENDING
+  object_detection: PENDING
+
+capabilities:
+  config: capabilities/capabilities.yaml
+
+simulation:
+  supported: true
+  backend: Gazebo Harmonic
+  description_ref: description/urdf/so101.urdf.xacro
+  fake_hardware: true
+  config: simulation/sim_config.yaml
+  selection: PENDING
+
+diagnostics:
+  interface: PENDING
+  reports: [device_health, driver_status, connection_status, fault_reporting, device_ready]
+
+lerobot:
+  platform_id: PENDING
+  config: lerobot/mapping.yaml
+
+pending:
+  - {path: /device/manipulators/0/manipulator_id, reason: "Placeholder UUID; real manipulator_id not yet assigned"}
+  - {path: /ros2_control/controllers/instances/gripper/type, reason: "Current configs disagree; do not freeze"}
+  - {path: /gripper/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION indicated by sim/fake config only; final set TBC, not validated by an I1 GripperCommand test"}
+  - {path: /gripper/command_interfaces, reason: "Sim/fake configuration only"}
+  - {path: /gripper/state_interfaces, reason: "Sim/fake configuration only"}
+  - {path: /device/configuration/mounting, reason: "Value set not final (fixed | mobile_base)"}
+  - {path: /device/workspace_envelope, reason: "Not yet measured; UNKNOWN type is invalid"}
+  - {path: /lerobot/platform_id, reason: "Depends on SO-101 exposure (ros2_control vs LeRobot only)"}
+  - {path: /driver/name, reason: "Depends on SO-101 exposure (ros2_control vs LeRobot only)"}

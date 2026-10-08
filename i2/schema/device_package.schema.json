@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "device_package.schema.json",
+  "title": "I2 Device Package manifest (draft v0.5)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "i1_api_version", "device", "driver", "ros2_control", "moveit", "gripper", "capabilities", "simulation", "diagnostics", "lerobot"],
+  "properties": {
+    "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"},
+    "i1_api_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"},
+    "device": {"$ref": "#/$defs/device"},
+    "driver": {"$ref": "#/$defs/driver"},
+    "ros2_control": {"$ref": "#/$defs/ros2_control"},
+    "moveit": {"$ref": "#/$defs/moveit"},
+    "gripper": {"$ref": "#/$defs/gripper"},
+    "capabilities": {
+      "type": "object", "additionalProperties": false, "required": ["config"],
+      "properties": {"config": {"$ref": "#/$defs/str"}}
+    },
+    "simulation": {"$ref": "#/$defs/simulation"},
+    "diagnostics": {"$ref": "#/$defs/diagnostics"},
+    "lerobot": {
+      "type": "object", "additionalProperties": false, "required": ["platform_id", "config"],
+      "properties": {"platform_id": {"$ref": "#/$defs/str"}, "config": {"$ref": "#/$defs/str"}}
+    },
+    "pending": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "reason"],
+        "properties": {"path": {"type": "string", "pattern": "^/"}, "reason": {"$ref": "#/$defs/str"}}
+      }
+    }
+  },
+  "$defs": {
+    "str": {"type": "string", "minLength": 1},
+    "pending": {"const": "PENDING"},
+    "uuid": {"type": "string", "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"},
+    "str_list": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/str"}},
+    "iface_list": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["position", "velocity", "effort"]}
+    },
+    "vec3": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"type": "number"}},
+    "device": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "manufacturer", "model", "version", "maintainer", "manipulators", "configuration", "workspace_envelope"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"$ref": "#/$defs/str"},
+        "manufacturer": {"$ref": "#/$defs/str"},
+        "model": {"$ref": "#/$defs/str"},
+        "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"},
+        "maintainer": {"$ref": "#/$defs/str"},
+        "manipulators": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["manipulator_id", "name", "arm_dof"],
+            "properties": {
+              "manipulator_id": {"$ref": "#/$defs/uuid"},
+              "name": {"$ref": "#/$defs/str"},
+              "arm_dof": {"type": "integer", "minimum": 1}
+            }
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["group_id", "members"],
+            "properties": {
+              "group_id": {"enum": ["LEFT", "RIGHT", "BIMANUAL"]},
+              "members": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/uuid"}}
+            }
+          }
+        },
+        "configuration": {
+          "type": "object", "additionalProperties": false, "required": ["mounting", "base_frame"],
+          "properties": {
+            "mounting": {"anyOf": [{"enum": ["fixed", "mobile_base"]}, {"$ref": "#/$defs/pending"}]},
+            "base_frame": {"$ref": "#/$defs/str"}
+          }
+        },
+        "workspace_envelope": {
+          "anyOf": [
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["type", "min_corner", "max_corner"],
+              "properties": {"type": {"const": "BOUNDING_BOX"}, "min_corner": {"$ref": "#/$defs/vec3"}, "max_corner": {"$ref": "#/$defs/vec3"}}
+            },
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["type", "reach_radius"],
+              "properties": {"type": {"const": "REACH_RADIUS"}, "reach_radius": {"type": "number", "exclusiveMinimum": 0}}
+            },
+            {"$ref": "#/$defs/pending"}
+          ]
+        },
+        "rated_payload_kg": {"type": "number", "minimum": 0}
+      }
+    },
+    "driver": {
+      "type": "object", "additionalProperties": false,
+      "required": ["name", "version", "config", "interface", "launch", "halt"],
+      "properties": {
+        "name": {"$ref": "#/$defs/str"},
+        "version": {"$ref": "#/$defs/str"},
+        "config": {"$ref": "#/$defs/str"},
+        "interface": {"$ref": "#/$defs/str"},
+        "launch": {"$ref": "#/$defs/str"},
+        "halt": {"$ref": "#/$defs/str"},
+        "lifecycle": {"$ref": "#/$defs/str"}
+      }
+    },
+    "ros2_control": {
+      "type": "object", "additionalProperties": false,
+      "required": ["hardware", "joints", "manipulator_joints", "command_interfaces", "state_interfaces", "controllers", "fake_hardware"],
+      "properties": {
+        "hardware": {
+          "type": "object", "additionalProperties": false, "required": ["plugin", "lifecycle"],
+          "properties": {"plugin": {"$ref": "#/$defs/str"}, "lifecycle": {"$ref": "#/$defs/str_list"}}
+        },
+        "joints": {"$ref": "#/$defs/str_list"},
+        "manipulator_joints": {
+          "type": "object", "additionalProperties": false,
+          "patternProperties": {
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$": {"$ref": "#/$defs/str_list"}
+          }
+        },
+        "gripper_joints": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/str"}},
+        "command_interfaces": {"$ref": "#/$defs/iface_list"},
+        "state_interfaces": {"$ref": "#/$defs/iface_list"},
+        "controllers": {
+          "type": "object", "additionalProperties": false, "required": ["config", "required_types"],
+          "properties": {
+            "config": {"$ref": "#/$defs/str"},
+            "required_types": {"$ref": "#/$defs/str_list"},
+            "instances": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object", "additionalProperties": false, "required": ["name", "type"],
+                "properties": {"name": {"$ref": "#/$defs/str"}, "type": {"$ref": "#/$defs/str"}}
+              }
+            }
+          }
+        },
+        "fake_hardware": {"type": "boolean"}
+      }
+    },
+    "moveit": {
+      "type": "object", "additionalProperties": false,
+      "required": ["config_ref", "planning_groups", "named_poses", "kinematics", "joint_limits"],
+      "properties": {
+        "config_ref": {"$ref": "#/$defs/str"},
+        "planning_groups": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["name", "role", "maps_to"],
+            "properties": {
+              "name": {"$ref": "#/$defs/str"},
+              "role": {"enum": ["ARM", "END_EFFECTOR"]},
+              "maps_to": {
+                "oneOf": [
+                  {"type": "object", "additionalProperties": false, "required": ["group_id"], "properties": {"group_id": {"enum": ["LEFT", "RIGHT", "BIMANUAL"]}}},
+                  {"type": "object", "additionalProperties": false, "required": ["manipulator_id"], "properties": {"manipulator_id": {"$ref": "#/$defs/uuid"}}}
+                ]
+              }
+            }
+          }
+        },
+        "named_poses": {
+          "type": "array",
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["selector", "poses"],
+            "properties": {"selector": {"$ref": "#/$defs/str"}, "poses": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/str"}}}
+          }
+        },
+        "stow_pose": {"type": "object", "additionalProperties": {"$ref": "#/$defs/str"}},
+        "kinematics": {"$ref": "#/$defs/str"},
+        "joint_limits": {"$ref": "#/$defs/str"},
+        "planning_pipelines": {"type": "array", "items": {"$ref": "#/$defs/str"}},
+        "end_effectors": {
+          "anyOf": [
+            {
+              "type": "array", "minItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["name", "frame", "parent_group"],
+                "properties": {"name": {"$ref": "#/$defs/str"}, "frame": {"$ref": "#/$defs/str"}, "parent_group": {"$ref": "#/$defs/str"}}
+              }
+            },
+            {"$ref": "#/$defs/pending"}
+          ]
+        }
+      }
+    },
+    "gripper": {
+      "type": "object", "additionalProperties": false, "required": ["has_gripper"],
+      "properties": {
+        "has_gripper": {"type": "boolean"},
+        "gripper_type": {"$ref": "#/$defs/str"},
+        "gripper_id": {"$ref": "#/$defs/str"},
+        "joint_count": {"type": "integer", "minimum": 1},
+        "command_interfaces": {"anyOf": [{"$ref": "#/$defs/iface_list"}, {"$ref": "#/$defs/pending"}]},
+        "state_interfaces": {"anyOf": [{"$ref": "#/$defs/iface_list"}, {"$ref": "#/$defs/pending"}]},
+        "supported_commands": {
+          "type": "array", "uniqueItems": true,
+          "items": {"enum": ["OPEN", "CLOSE", "GOTO_POSITION", "FORCE_LIMITED_CLOSE"]}
+        },
+        "reports_effort": {"anyOf": [{"type": "boolean"}, {"$ref": "#/$defs/pending"}]},
+        "contact_detection": {"anyOf": [{"type": "boolean"}, {"$ref": "#/$defs/pending"}]},
+        "object_detection": {"anyOf": [{"type": "boolean"}, {"$ref": "#/$defs/pending"}]}
+      }
+    },
+    "simulation": {
+      "type": "object", "additionalProperties": false, "required": ["supported"],
+      "properties": {
+        "supported": {"type": "boolean"},
+        "backend": {"$ref": "#/$defs/str"},
+        "description_ref": {"$ref": "#/$defs/str"},
+        "fake_hardware": {"type": "boolean"},
+        "hardware_mode": {"$ref": "#/$defs/str"},
+        "config": {"$ref": "#/$defs/str"},
+        "selection": {"$ref": "#/$defs/str"}
+      }
+    },
+    "diagnostics": {
+      "type": "object", "additionalProperties": false, "required": ["interface", "reports"],
+      "properties": {
+        "interface": {"$ref": "#/$defs/str"},
+        "reports": {
+          "type": "array", "uniqueItems": true,
+          "items": {"enum": ["device_health", "driver_status", "connection_status", "fault_reporting", "device_ready"]}
+        },
+        "error_codes": {"$ref": "#/$defs/str"}
+      }
+    }
+  }
+}

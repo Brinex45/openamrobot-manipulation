@@ -1,0 +1,115 @@
+# OpenArm 2.0 Device Package manifest. DRAFT: only values stated in A5 section 14 are filled;
+# everything else is PENDING or listed in the pending registry. Joint/group names are illustrative.
+schema_version: "0.5"
+i1_api_version: "1.0"
+
+device:
+  id: openarm_v2
+  name: OpenArm 2.0
+  manufacturer: PENDING
+  model: OpenArm 2.0
+  version: 0.1.0-draft
+  maintainer: PENDING
+  manipulators:
+    - {manipulator_id: c8b217e5-49cc-58ca-bafe-fae6c6192900, name: left_arm, arm_dof: 7}
+    - {manipulator_id: 9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7, name: right_arm, arm_dof: 7}
+  groups:
+    - {group_id: LEFT, members: [c8b217e5-49cc-58ca-bafe-fae6c6192900]}
+    - {group_id: RIGHT, members: [9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7]}
+    - {group_id: BIMANUAL, members: [c8b217e5-49cc-58ca-bafe-fae6c6192900, 9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7]}
+  configuration: {mounting: PENDING, base_frame: PENDING}
+  workspace_envelope: PENDING
+  # rated_payload_kg omitted: TBC -> rated_payload_kg_known = false
+
+driver:
+  name: PENDING
+  version: PENDING
+  config: driver/config.yaml
+  interface: PENDING
+  launch: openarm_driver
+  halt: PENDING
+
+ros2_control:
+  hardware: {plugin: PENDING, lifecycle: [configure, activate, deactivate]}
+  joints:
+    - left_joint1
+    - left_joint2
+    - left_joint3
+    - left_joint4
+    - left_joint5
+    - left_joint6
+    - left_joint7
+    - right_joint1
+    - right_joint2
+    - right_joint3
+    - right_joint4
+    - right_joint5
+    - right_joint6
+    - right_joint7
+    - left_finger_joint
+    - right_finger_joint
+  manipulator_joints:
+    c8b217e5-49cc-58ca-bafe-fae6c6192900: [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6, left_joint7]
+    9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7: [right_joint1, right_joint2, right_joint3, right_joint4, right_joint5, right_joint6, right_joint7]
+  gripper_joints: [left_finger_joint, right_finger_joint]
+  command_interfaces: [position, velocity, effort]
+  state_interfaces: [position, velocity, effort]
+  controllers:
+    config: ros2_control/controllers.yaml
+    required_types: [joint_trajectory_controller/JointTrajectoryController]
+  fake_hardware: true
+
+moveit:
+  config_ref: moveit
+  planning_groups:
+    - {name: left_arm, role: ARM, maps_to: {manipulator_id: c8b217e5-49cc-58ca-bafe-fae6c6192900}}
+    - {name: right_arm, role: ARM, maps_to: {manipulator_id: 9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7}}
+    - {name: both_arms, role: ARM, maps_to: {group_id: BIMANUAL}}
+  named_poses: []
+  kinematics: moveit/kinematics.yaml
+  joint_limits: moveit/joint_limits.yaml
+  end_effectors: PENDING
+
+gripper:
+  has_gripper: true
+  gripper_type: PENDING
+  gripper_id: PENDING
+  joint_count: 2
+  command_interfaces: PENDING
+  state_interfaces: PENDING
+  supported_commands: [OPEN, CLOSE, GOTO_POSITION]
+  reports_effort: PENDING
+  contact_detection: PENDING
+  object_detection: PENDING
+
+capabilities:
+  config: capabilities/capabilities.yaml
+
+simulation:
+  supported: true
+  backend: PENDING
+  description_ref: description/urdf/openarm.urdf.xacro
+  fake_hardware: true
+  config: simulation/sim_config.yaml
+  selection: PENDING
+
+diagnostics:
+  interface: PENDING
+  reports: [device_health, driver_status, connection_status, fault_reporting, device_ready]
+
+lerobot:
+  platform_id: PENDING
+  config: lerobot/mapping.yaml
+
+pending:
+  - {path: /device/manipulators/0/manipulator_id, reason: "Placeholder UUID; final per package configuration"}
+  - {path: /device/manipulators/1/manipulator_id, reason: "Placeholder UUID; final per package configuration"}
+  - {path: /device/groups, reason: "LEFT/RIGHT/BIMANUAL membership TBC"}
+  - {path: /device/configuration/mounting, reason: "TBC; value set not final"}
+  - {path: /device/workspace_envelope, reason: "TBC (BOUNDING_BOX or REACH_RADIUS)"}
+  - {path: /ros2_control/joints, reason: "Joint names illustrative; confirm against actual OpenArm package"}
+  - {path: /ros2_control/gripper_joints, reason: "Gripper joint names/count illustrative; confirm against actual package"}
+  - {path: /moveit/planning_groups, reason: "Group names and mapping TBC"}
+  - {path: /moveit/named_poses, reason: "Named poses and stow_pose TBC; empty until confirmed"}
+  - {path: /gripper/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION per A5 s14; FORCE_LIMITED_CLOSE and effort reporting TBC"}
+  - {path: /gripper/joint_count, reason: "Gripper-per-manipulator modelling for a dual-arm device is not defined in v0.5"}
