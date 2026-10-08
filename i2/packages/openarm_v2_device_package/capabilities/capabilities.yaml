@@ -1,0 +1,45 @@
+# OpenArm 2.0 capabilities. No I1 end-to-end validation has been run, so nothing is `supported` yet.
+capabilities:
+  actions:
+    named_pose_move:
+      status: planned
+      reason: "Pending end-to-end I1 validation; named poses TBC"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    plan:
+      status: planned
+      reason: "Pending end-to-end I1 Plan validation"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    plan_preview:
+      status: planned
+      reason: "Pending end-to-end I1 GetPlanPreview validation (depends on plan)"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    execute:
+      status: planned
+      reason: "Pending end-to-end I1 Execute validation (depends on plan)"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    gripper_command:
+      status: planned
+      reason: "Pending I1 GripperCommand validation; command set TBC"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    cartesian_motion:
+      status: planned
+      reason: "Pending end-to-end I1 Cartesian Motion validation; MoveIt groups TBC"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    move_until_contact:
+      status: planned
+      reason: "Depends on force_torque_sensing, which is TBC"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    compliant_hold:
+      status: planned
+      reason: "Depends on force_torque_sensing, which is TBC"
+      validation: {state: PENDING, note: "Validation not yet run"}
+    abort_task:
+      status: planned
+      reason: "Pending end-to-end I1 AbortTask validation; STOP_ONLY only"
+      validation: {state: PENDING, note: "Validation not yet run"}
+
+  force_torque_sensing: PENDING   # TBC: ACTUATOR_ESTIMATE or DIRECT_FT
+  has_compliant_control: PENDING
+
+  abort_modes:
+    - STOP_ONLY

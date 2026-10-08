@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "capabilities.schema.json",
+  "title": "I2 capabilities/capabilities.yaml (draft v0.5)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capabilities"],
+  "properties": {
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actions", "force_torque_sensing", "has_compliant_control", "abort_modes"],
+      "properties": {
+        "actions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["named_pose_move", "plan", "plan_preview", "execute", "gripper_command", "cartesian_motion", "move_until_contact", "compliant_hold", "abort_task"],
+          "properties": {
+            "named_pose_move": {"$ref": "#/$defs/action"},
+            "plan": {"$ref": "#/$defs/action"},
+            "plan_preview": {"$ref": "#/$defs/action"},
+            "execute": {"$ref": "#/$defs/action"},
+            "gripper_command": {"$ref": "#/$defs/action"},
+            "cartesian_motion": {"$ref": "#/$defs/action"},
+            "move_until_contact": {"$ref": "#/$defs/action"},
+            "compliant_hold": {"$ref": "#/$defs/action"},
+            "abort_task": {"$ref": "#/$defs/action"}
+          }
+        },
+        "force_torque_sensing": {
+          "anyOf": [{"enum": ["UNKNOWN", "ACTUATOR_ESTIMATE", "DIRECT_FT"]}, {"const": "PENDING"}]
+        },
+        "has_compliant_control": {"anyOf": [{"type": "boolean"}, {"const": "PENDING"}]},
+        "abort_modes": {"$ref": "#/$defs/abort_modes"},
+        "abort_modes_by_selector": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/abort_modes"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "status": {"enum": ["supported", "experimental", "planned", "unsupported"]},
+    "abort_modes": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"enum": ["STOP_ONLY", "RETRACT", "STOW"]}
+    },
+    "action": {
+      "anyOf": [
+        {"$ref": "#/$defs/status"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["status"],
+          "properties": {
+            "status": {"$ref": "#/$defs/status"},
+            "reason": {"type": "string", "minLength": 1},
+            "validation": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["state"],
+              "properties": {
+                "state": {"enum": ["PENDING", "VALIDATED"]},
+                "evidence": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["kind", "ref"],
+                    "properties": {
+                      "kind": {"enum": ["CONFIG_ONLY", "SIM_FAKE_E2E", "HARDWARE_E2E"]},
+                      "ref": {"type": "string", "minLength": 1}
+                    }
+                  }
+                },
+                "note": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

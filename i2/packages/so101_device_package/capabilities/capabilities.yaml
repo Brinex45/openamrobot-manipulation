@@ -1,0 +1,57 @@
+# SO-101 capabilities. Nothing is `supported` until its I1 action passes an end-to-end test.
+# Evidence kinds: CONFIG_ONLY < SIM_FAKE_E2E < HARDWARE_E2E. Only the last two can back `supported`.
+capabilities:
+  actions:
+    named_pose_move:
+      status: planned
+      reason: "Pending end-to-end I1 NamedPoseMove validation"
+      validation:
+        state: PENDING
+        evidence: [{kind: CONFIG_ONLY, ref: "sim/fake fixture: named state 'home' present"}]
+        note: "Configuration evidence only"
+    plan:
+      status: planned
+      reason: "Pending end-to-end I1 Plan validation"
+      validation:
+        state: PENDING
+        evidence: [{kind: CONFIG_ONLY, ref: "sim/fake fixture: MoveIt groups arm, gripper"}]
+        note: "Configuration evidence only"
+    plan_preview:
+      status: planned
+      reason: "Pending end-to-end I1 GetPlanPreview validation (depends on plan)"
+      validation: {state: PENDING, note: "Configuration evidence only"}
+    execute:
+      status: planned
+      reason: "Pending end-to-end I1 Execute validation (depends on plan)"
+      validation: {state: PENDING, note: "Configuration evidence only"}
+    gripper_command:
+      status: planned
+      reason: "Pending I1 GripperCommand validation; final command set TBC"
+      validation:
+        state: PENDING
+        evidence: [{kind: CONFIG_ONLY, ref: "sim/fake fixture indicates OPEN, CLOSE, GOTO_POSITION"}]
+        note: "Limited support evidence only"
+    cartesian_motion:
+      status: planned
+      reason: "Limited evidence: an arm MoveIt planning group exists in the sim/fake fixture, which does not validate the full I1 Cartesian Motion action"
+      validation:
+        state: PENDING
+        evidence: [{kind: CONFIG_ONLY, ref: "sim/fake fixture: MoveIt planning group 'arm'"}]
+        note: "Mark supported only after an end-to-end Cartesian Motion test succeeds"
+    move_until_contact:
+      status: unsupported
+      reason: "No usable force/contact sensing is declared"
+    compliant_hold:
+      status: unsupported
+      reason: "No compliant control is declared"
+    abort_task:
+      status: planned
+      reason: "Pending end-to-end I1 AbortTask validation; STOP_ONLY only"
+      validation: {state: PENDING, note: "Validation not yet run"}
+
+  # Capability properties (not actions)
+  force_torque_sensing: UNKNOWN   # current package declares no usable force/torque sensing; hardware not claimed
+  has_compliant_control: false
+
+  abort_modes:
+    - STOP_ONLY                   # RETRACT / STOW only once a safe pose is configured and permitted
