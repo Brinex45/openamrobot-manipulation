@@ -1,17 +1,14 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 OpenAMRobot (Botshare LTD)
-"""Headless move_group with the pinned upstream v2.0 MoveIt config.
+"""Headless move_group tests using the pinned upstream v2.0 MoveIt config.
 
-Planning and fake execution are reported as separate tests.
+Planning and fake execution are tested separately.
 
-KNOWN UPSTREAM FAILURE (pinned openarm_ros2 4e837e1, MoveIt 2.12.4 on Jazzy):
-config/openarm_v2.0/joint_limits.yaml sets has_acceleration_limits: false for
-every joint, so the default OMPL pipeline's AddTimeOptimalParameterization
-adapter rejects every plan ("No acceleration limit was defined for joint
-openarm_left_joint1!"). The planning/execution tests are strict xfails: they
-are reported as failures-by-design, never as passes, and will turn red
-(XPASS) once upstream supplies acceleration limits. This package does not
-invent acceleration limits.
+The pinned upstream joint_limits.yaml lacks acceleration limits. The fake
+profile applies a synthetic acceleration overlay labelled
+"planning placeholder, not hardware" so headless planning and fake execution
+can be tested. The pinned upstream configuration remains unchanged, and the
+overlay must never be treated as validated hardware limits.
 """
 
 import os
@@ -31,10 +28,6 @@ from moveit_msgs.srv import GetMotionPlan
 from fake_stack import LaunchedStack, Probe
 from openarm_v2_fake_baseline import fake_profile as fp
 
-UPSTREAM_TOTG_XFAIL = pytest.mark.xfail(
-    strict=True, raises=AssertionError,
-    reason='upstream v2.0 joint_limits.yaml has no acceleration limits; '
-           'MoveIt TOTG adapter fails every plan')
 NAMED_STATE = 'hands_up'  # Upstream SRDF group_state, not an OpenAMRobot pose.
 MOVEIT_V20 = os.path.join(get_package_share_directory('openarm_bimanual_moveit_config'),
                           'config', 'openarm_v2.0')
@@ -104,7 +97,6 @@ def _plan(probe, group, goal):
     return probe._call(GetMotionPlan, '/plan_kinematic_path', req, timeout=30.0)
 
 
-@UPSTREAM_TOTG_XFAIL
 @pytest.mark.parametrize('side', fp.ARM_SIDES)
 def test_plan_to_upstream_named_state(probe, side):
     group = f'{side}_arm'
@@ -119,7 +111,6 @@ def test_plan_to_upstream_named_state(probe, side):
         assert abs(final[j] - v) < 1e-2, (j, final[j], v)
 
 
-@UPSTREAM_TOTG_XFAIL
 def test_execute_planned_left_arm_on_fake_controller(probe):
     """Fake execution of a MoveIt plan (separate result from planning)."""
     goal = _named_state('left_arm')

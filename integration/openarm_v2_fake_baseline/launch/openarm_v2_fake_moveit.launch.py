@@ -13,6 +13,8 @@ enactic/openarm_ros2 openarm_bimanual_moveit_config/launch/demo.launch.py
 
 import os
 
+import yaml
+
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (DeclareLaunchArgument, IncludeLaunchDescription,
@@ -46,6 +48,20 @@ def _move_group(context):
     )
     fake_profile.assert_mock_only(
         moveit_config.robot_description['robot_description'])
+
+    # Fake-profile-only synthetic planning overlay. This is explicitly
+    # not hardware data and must never be used for a real profile.
+    overlay_path = os.path.join(
+        get_package_share_directory('openarm_v2_fake_baseline'),
+        'config', 'planning_placeholder_not_hardware.yaml')
+    with open(overlay_path) as stream:
+        overlay = yaml.safe_load(stream)
+    planning_key = 'robot_description_planning'
+    moveit_config.joint_limits[planning_key] = (
+        fake_profile.merge_fake_acceleration_overlay(
+            moveit_config.joint_limits[planning_key],
+            overlay,
+            profile='fake'))
 
     return [Node(
         package='moveit_ros_move_group',
