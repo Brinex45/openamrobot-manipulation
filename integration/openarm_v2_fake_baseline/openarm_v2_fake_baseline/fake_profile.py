@@ -116,3 +116,42 @@ def bounded_target(lower, upper, current=0.0, step=0.2, fraction=0.25):
     target = current + direction * delta
     margin = 0.05 * span
     return min(max(target, lower + margin), upper - margin)
+
+
+def merge_fake_acceleration_overlay(joint_limits_config, overlay, profile):
+    """Merge synthetic planning limits only for the explicit fake profile.
+
+    The overlay is not a source of validated hardware limits.
+    """
+    if profile != 'fake':
+        raise FakeProfileError(
+            "planning placeholder, not hardware: overlay is restricted "
+            "to the fake profile; real profiles must reject it")
+    if not isinstance(joint_limits_config, dict):
+        raise FakeProfileError('invalid MoveIt joint limits configuration')
+    if not isinstance(overlay, dict) or not isinstance(
+            overlay.get('joint_limits'), dict):
+        raise FakeProfileError('invalid acceleration overlay schema')
+
+    merged = {
+        key: (dict(value) if isinstance(value, dict) else value)
+        for key, value in joint_limits_config.items()
+    }
+    base_joints = dict(merged.get('joint_limits', {}))
+    for name, limits in overlay['joint_limits'].items():
+        if name not in base_joints:
+            raise FakeProfileError(
+                f'overlay references unknown joint: {name}')
+        if not isinstance(limits, dict):
+            raise FakeProfileError(f'invalid overlay entry for {name}')
+        if limits.get('has_acceleration_limits') is not True:
+            raise FakeProfileError(
+                f'overlay must explicitly enable acceleration limits for {name}')
+        value = limits.get('max_acceleration')
+        if not isinstance(value, (int, float)) or value <= 0:
+            raise FakeProfileError(
+                f'overlay acceleration must be positive for {name}')
+        base_joints[name] = {**base_joints[name], **limits}
+
+    merged['joint_limits'] = base_joints
+    return merged
