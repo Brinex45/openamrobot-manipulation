@@ -30,9 +30,19 @@ A development-only, headless bring-up of the **upstream** OpenArm 2.0 bimanual m
 | [enactic/openarm_ros2](https://github.com/enactic/openarm_ros2/tree/4e837e1d0dae692ff67b560b69d8d281d7a8d4ed) | `4e837e1d0dae692ff67b560b69d8d281d7a8d4ed` (main, 2026-06-29; `0.9.2-5-g4e837e1`) | Apache-2.0 |
 | [enactic/openarm_description](https://github.com/enactic/openarm_description/tree/14ff67b638ff1c738a1b9a6be8aaa5ce5ed2c831) | `14ff67b638ff1c738a1b9a6be8aaa5ce5ed2c831` (main, 2026-09-09; `1.0.4-22-g14ff67b`) | Apache-2.0 |
 
-OpenArm 2.0 support exists only on upstream `main`: the model is under `assets/robot/openarm_v2.0`, and `openarm_ros2` gained it in 01b9f38 "Support OpenArm 2.0 (#91)". No release tag contains it, so the manifest pins commit SHAs. The build uses `openarm_description`, `openarm_bringup` and `openarm_bimanual_moveit_config`. `openarm_hardware` (the real CAN plugin) and the `openarm` meta-package are excluded with `COLCON_IGNORE`; `openarm_can` is not fetched. No upstream source is copied into this repository.
+OpenArm 2.0 support exists only on upstream `main`: the model is under `assets/robot/openarm_v2.0`, and `openarm_ros2` gained it in 01b9f38, "Support OpenArm 2.0 (#91)". No release tag contains it, so the manifest pins commit SHAs. The build uses `openarm_description`, `openarm_bringup` and `openarm_bimanual_moveit_config`. `openarm_hardware` (the real CAN plugin) and the `openarm` meta-package are excluded with `COLCON_IGNORE`; `openarm_can` is not fetched. No upstream source is copied into this repository.
 
 Verified with apt packages: `ros-jazzy-ros2-control` / `controller-manager` / `hardware-interface` 4.48.0, `joint-trajectory-controller` / `joint-state-broadcaster` 4.42.1, `moveit-*` 2.12.4, `xacro` 2.1.1, `robot-state-publisher` 3.3.4, `rclpy` 7.1.12, `rmw-fastrtps-cpp` 8.4.4 (default RMW).
+
+## Fake-profile acceleration overlay — pending review
+
+The pinned upstream OpenArm v2.0 `joint_limits.yaml` remains unchanged by the integration overlay. Its disabled acceleration limits cause MoveIt's `AddTimeOptimalParameterization` adapter to reject plans in the pinned configuration.
+
+The fake MoveIt launch can apply a separate synthetic acceleration overlay only after checking the explicit fake-hardware profile and mock-plugin configuration. The overlay is labelled **"planning placeholder, not hardware"**.
+
+The overlay exists only to enable fake-profile planning and fake-controller execution tests. Its acceleration values are not approved, validated, or proposed for physical hardware. A regression test verifies that the overlay is rejected for non-fake profiles.
+
+The new overlay is **pending review** and does not replace the upstream fix. Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10) remains open for the upstream acceleration-limit question. The original owner-adopted development-only fake-hardware baseline remains a separate record; the new overlay does not reset that adoption status.
 
 ## Commands
 
@@ -66,17 +76,46 @@ ros2 launch openarm_v2_fake_baseline openarm_v2_fake_moveit.launch.py use_fake_h
 
 | Suite | Checks |
 |---|---|
-| `test_fake_profile` (13) | v2.0 model is expanded (not v1.0), 18 unique movable joints (14 arm, 2 actuated fingers, 2 mimic fingers), only mock plugins, `ros2_control` joints match upstream controller YAML, targets stay inside URDF limits, guard rejects non-`true` values and a real-hardware expansion |
-| `test_launch_guard` (4) | both launch files reject `use_fake_hardware:=false` and a missing argument, with no node started |
-| `test_fake_bringup` (11) | runtime hardware is mock-only; JSB, both arm JTCs and both gripper JTCs active; `/joint_states` has the 16 actuated joints; 4 `follow_joint_trajectory` endpoints; a bounded trajectory on each arm and each gripper (targets derived from the URDF limits read back from `robot_state_publisher`) returns `SUCCESSFUL` and `/joint_states` reaches the target. Negative cases: a wrong endpoint name is not found; a deactivated right-arm controller shows as `inactive`, rejects the goal, and no joint moves |
-| `test_moveit_planning` (5) | `move_group` loads the upstream v2.0 config and answers plan requests; root-cause check (below); planning for both arms and MoveIt execution for the left arm are **strict xfail** |
+| `test_fake_profile` (17) | Fake-profile restrictions, application of the synthetic overlay to known joints, rejection of the overlay for non-fake profiles, and MoveIt controller/joint-name configuration mappings |
+| `test_launch_guard` (4) | Both launch files reject `use_fake_hardware:=false` and a missing argument, with no node started |
+| `test_fake_bringup` (11) | Runtime hardware is mock-only; JSB, both arm JTCs and both gripper JTCs active; `/joint_states` has the 16 actuated joints; four `follow_joint_trajectory` endpoints; bounded trajectories on both arms and both grippers return `SUCCESSFUL` and `/joint_states` reaches the target. Negative cases check wrong endpoint names and a deactivated right-arm controller |
+| `test_moveit_planning` (5) | MoveIt loads the upstream v2.0 configuration and serves planning requests; root-cause check; planning to the upstream `hands_up` state for both arms and execution of a planned left-arm trajectory through the fake controller using the fake-only overlay |
 
-### Known upstream issue: MoveIt planning fails
+The recorded local package validation is 17 passing fake-profile tests, five passing MoveIt planning tests, and 41 package tests with zero errors, failures or skipped tests. These are local results, not hosted CI results.
 
-At the pinned commit, `openarm_bimanual_moveit_config/config/openarm_v2.0/joint_limits.yaml` sets `has_acceleration_limits: false` for every joint. With MoveIt 2.12.4, the default OMPL pipeline's `AddTimeOptimalParameterization` adapter then rejects every plan: `No acceleration limit was defined for joint openarm_left_joint1!` → `FAILURE (99999)`. OMPL itself finds a path; only the time parameterization fails. In a scratch-only diagnostic (not committed), placeholder limits made both arms plan successfully. Those placeholder values are not proposed; real limits must come from upstream or the owners. The planning tests are strict xfails: they count as failures, not passes, and turn red once upstream changes. This package does not patch upstream configuration.
+## Known upstream issue: MoveIt planning fails
 
-A second upstream mismatch: `moveit_controllers.yaml` (v2.0) declares the grippers as `GripperCommand` on `gripper_cmd`, but `openarm_bringup` runs them as `JointTrajectoryController` (`follow_joint_trajectory`). Gripper execution through MoveIt will therefore not work as configured. Only the direct JTC gripper path is tested here.
+At the pinned commit, `openarm_bimanual_moveit_config/config/openarm_v2.0/joint_limits.yaml` disables acceleration limits for the arm joints. With MoveIt 2.12.4, the default OMPL pipeline's `AddTimeOptimalParameterization` adapter rejects plans with an error such as:
+
+```text
+No acceleration limit was defined for joint openarm_left_joint1!
+```
+
+The planning service returns `FAILURE (99999)`. OMPL can find a geometric path, but time parameterization fails.
+
+The fake-profile integration now uses a separate synthetic acceleration overlay labelled **"planning placeholder, not hardware"** to enable headless planning and fake-controller execution tests. The upstream configuration remains unchanged, and a regression test rejects the overlay for non-fake profiles. Passing tests establish fake-profile integration behaviour only; they do not establish approved acceleration limits or physical-hardware acceptance.
+
+Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10) remains open for the upstream acceleration-limit question. The upstream fix must provide appropriate acceleration limits; this integration does not prescribe or qualify real-hardware values.
+
+## MoveIt gripper execution gap — issue #11 remains open
+
+At the pinned upstream v2.0 revision, `moveit_controllers.yaml` declares the grippers using `GripperCommand` on `gripper_cmd`, while `openarm_bringup` runs them as `JointTrajectoryController` controllers exposing `follow_joint_trajectory`.
+
+The MoveIt controller configuration needs to use `FollowJointTrajectory` to match the controller setup. The integration checks the expected controller and joint-name mappings, but a configuration assertion does **not** prove that the gripper action executes successfully through MoveIt. Direct JTC gripper execution is separate evidence.
+
+Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11) remains open for the actual MoveIt gripper execution gap until the MoveIt action path is validated. Do not treat the configuration mapping test as end-to-end gripper acceptance.
 
 ## Not validated by this baseline
 
 Fake trajectory success only shows that mock hardware followed the commanded positions. It does not validate the real hardware plugin, CAN, gains, zeroing, gripper contact or grasp force, payload, dynamics, collisions during execution, safety, or physical acceptance. It is not integrated simulation and not release readiness.
+
+## Current validation boundaries
+
+- **Schema/conformance:** Local tests only; not hosted CI acceptance.
+- **Fake-hardware integration:** Local build and tests only.
+- **Synthetic acceleration values:** Planning placeholders only, not hardware-qualified.
+- **MoveIt gripper action execution:** Not established by controller-configuration checks.
+- **Physical hardware, real CAN operation, and device acceptance:** Not validated.
+- **A3/I1 contract reference and acceptance record:** Exact revision and acceptance record still require confirmation from the contract owner.
+- **Unresolved A3/I1 semantics:** Unavailable gripper contact/object data and `CompliantHold` / compliant-control capability gating remain open pending agreement with Adnan and the contract owners.
+- **Hosted test gate:** The local test results above must not be presented as hosted Actions evidence. The skipped `repository-quality / quality/test` gate requires coordination with the repository maintainers.
