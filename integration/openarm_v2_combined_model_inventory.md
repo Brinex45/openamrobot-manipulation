@@ -67,14 +67,22 @@ All 21 non-world links have a visual, a collision mesh and an upstream "nominal"
 
 Upstream nominal inertials are not measured values for the OpenAMRobot build.
 
-## 6. Mast configuration context (not a selection)
+## 6. Lift configuration context (not a selection)
 
-| Configuration ID | Status |
+Baseline from the P-03 Decision Addendum revision 18.9 (9 October 2026), as recorded in the `openAMRobot/.github` decisions register (entries LIFT, ARM-MOUNT, CONFIG-IDS). The lift is approved in principle; it is not a finished design. This inventory selects no lift stop or base-plate position and invents no transforms; the values below are restated from the register, not derived here.
+
+| Item | Baseline |
 |---|---|
-| `mast_1350` | Installed shoulder-axis height, 1350 mm (P-03 Decision Addendum revision 18.2, 28 September 2026) |
-| `mast_1300`, `mast_1400`, `mast_1450` | Indexed positions available for assessment; not installed without a recorded decision |
+| Lift column | DOLD Hexalift V4 350 mm primary; TiMOTION TL3 400 mm fallback |
+| Shoulder height | 1000 to 1350 mm above the floor, at the OpenArm arm mount point (`openarm_{side}_base_link`); the upstream OpenArm body (`openarm_body_link0`) is not used |
+| Arm mount | 0.180 m ahead of the lift column axis, y +/-0.031 m |
+| Lift base plate | centre or +50 mm (`bp000`, `bp050`) |
+| Lift stops | `L1000`, `L1175`, `L1350` (calibration IDs; the lift height is joint state) |
+| Configuration IDs | `column`, `base_plate`, `head_pitch`, `base_tilt`; these replace `mast_id` (`mast_1300` to `mast_1450` are superseded) |
+| Lift control | CAN3 through the STM32 base controller, part of 2.0 |
+| Release gates (open) | DOLD holding on E-stop and power loss; supplier CAD; F2S rerun |
 
-The mast top is 1500 mm above the floor and the maximum assembled height is 1700 mm; positions above 1450 mm are not provided by the 2.0 mast. None of the four positions is validated by this work. The fixed mast is the 2.0 configuration; the lift is deferred to OpenAMRobot 3.0.
+None of these values has been checked against hardware or the combined model by this work.
 
 ## 7. Missing inputs (no values guessed)
 

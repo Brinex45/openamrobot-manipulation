@@ -50,7 +50,14 @@ This block is copied verbatim; GitHub does not propagate it between repositories
 - Legacy ReBot wording is stale; do not expand unrelated tasks to rewrite the README.
 - Common interfaces belong in openamrobot-interfaces; do not invent a parallel I1 API.
 - Combined base/mast/arm model composition belongs in openamr-upperbody-sw.
-- Fixed mast in 2.0; do not follow stale lift-active prose in upperbody README.
+- Lift baseline (P-03 rev18.9): lift approved in principle, DOLD Hexalift V4 350 mm
+  primary, TiMOTION TL3 400 mm fallback; shoulder 1000 to 1350 mm at the OpenArm arm
+  mount point (openarm_{side}_base_link); the upstream OpenArm body is not used.
+- Arm mount 0.180 m ahead of the column axis, y +/-0.031 m; base plate centre or +50 mm
+  (bp000, bp050); lift stops L1000, L1175, L1350. Configuration IDs column, base_plate,
+  head_pitch and base_tilt replace mast_id. Lift control is on CAN3 through the STM32
+  base controller, part of 2.0. Release gates open: DOLD holding on E-stop and power
+  loss, supplier CAD, F2S rerun. Describe the lift only as "approved in principle".
 - Do not choose mast height, invent transforms or claim payload/contact capabilities.
 - Read [readiness issue 7](https://github.com/openAMRobot/openamrobot-manipulation/issues/7).
 
