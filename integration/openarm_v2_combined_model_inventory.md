@@ -2,8 +2,8 @@
 
 > **Status:** Owner-adopted development-only fake-hardware baseline.
 > This draft is not an accepted contract or production implementation.
-> Recipient: `openamr-upperbody-sw` owner (Tushar), who owns the combined base + fixed mast + arms model.
-> This is an inventory only. It selects no mast position, invents no transforms and makes no payload, contact or stability claims.
+> Recipient: openamr-upperbody-sw owner, who owns the combined base + lift column + arms model.
+> This is an inventory only. It invents no transforms and makes no payload, contact or safety claims; geometry follows P-03 rev19.0.
 
 All values below come from the pinned upstream sources. They were read from the URDF expanded with the default preset and `use_fake_hardware:=true`. They have not been validated on hardware.
 
@@ -69,27 +69,55 @@ Upstream nominal inertials are not measured values for the OpenAMRobot build.
 
 ## 6. Lift configuration context (not a selection)
 
-Baseline from the P-03 Decision Addendum revision 18.9 (9 October 2026), as recorded in the `openAMRobot/.github` decisions register (entries LIFT, ARM-MOUNT, CONFIG-IDS). The lift is approved in principle; it is not a finished design. This inventory selects no lift stop or base-plate position and invents no transforms; the values below are restated from the register, not derived here.
+Source: P-03 Decision Addendum revision 19.0, items 15 to 19 (12 October 2026), and the hardware BOM Issue 7.7. The values below are restated from those sources, not derived here. This inventory selects no lift stop, base-plate position or camera pitch and invents no transforms. The lift is approved in principle (decisions register entry LIFT). The `openAMRobot/.github` decisions register records the same geometry under LIFT, ARM-MOUNT, CONFIG-IDS, CAMERAS and HEAD-CAMERA-IDENTITY, with the 12 October 2026 platform decision marked "P-03 rev19.0 to record".
 
-| Item | Baseline |
+| Item | Value (P-03 rev19.0) |
 |---|---|
-| Lift column | DOLD Hexalift V4 350 mm primary; TiMOTION TL3 400 mm fallback |
-| Shoulder height | 1000 to 1350 mm above the floor, at the OpenArm arm mount point (`openarm_{side}_base_link`); the upstream OpenArm body (`openarm_body_link0`) is not used |
-| Arm mount | 0.180 m ahead of the lift column axis, y +/-0.031 m |
-| Lift base plate | centre or +50 mm (`bp000`, `bp050`) |
-| Lift stops | `L1000`, `L1175`, `L1350` (calibration IDs; the lift height is joint state) |
-| Configuration IDs | `column`, `base_plate`, `head_pitch`, `base_tilt`; these replace `mast_id` (`mast_1300` to `mast_1450` are superseded) |
-| Lift control | CAN3 through the STM32 base controller, part of 2.0 |
-| Release gates (open) | DOLD holding on E-stop and power loss; supplier CAD; F2S rerun |
+| Upper body | lift column with option B (P-03 rev19.0 item 18), without the OpenArm supplied body (`openarm_body_link0` removed) |
+| Lift column | DOLD Hexalift V4 350 mm, order code BS-HM240G350530-MFF24; column 530 mm retracted / 880 mm extended; 11.7 kg (catalogue value) |
+| Shoulder height | 1000 mm at L1000, 1350 mm at L1350, at `openarm_{side}_base_link` (J1_A); shoulder datum decided in P-03 rev19.0 item 17 |
+| Lift stops | L1000 / L1175 / L1350 (calibration IDs); the lift height is joint state |
+| Maximum assembled height | 1700 mm (assembled-height envelope, not a shoulder height) |
+| Arm mount | `openarm_{side}_base_link` (J1_A) 0.180 m ahead of the column axis, y +/-0.031 m, rpy 0, 0.166 m above the column top plate; shoulder spacing 307 mm; one 1 mm spacer under each J1_A plate |
+| Column position | column axis x +0.060 from `base_link` at bp000 and +0.110 at bp050 (330 mm behind the chassis front edge) |
+| Arm profile | profile 844 to 1184 mm at L1000 |
+| Head camera | Stereolabs ZED Mini, SKU ZED-121210, on the profile top pitch bracket; lens 22 mm ahead of and 223 mm above the shoulder; pitch hp15 to hp35, baseline hp25 |
+| Base camera tilt | configuration IDs bt05 / bt10 / bt15, baseline bt10 |
+| Configuration IDs | `column` (`dold_v4_350`, `tl3_400`), `base_plate` (`bp000`, `bp050`), `head_pitch`, `base_tilt`; `mast_id` is gone (no longer used) |
+| Base controller | STM32H723ZG on NUCLEO-H723ZG; the lift is driven on CAN3 through a CAN-to-lift interface module |
+| Release gates (open, as listed in P-03 rev18.9) | DOLD holding on E-stop and power loss; supplier CAD; F2S rerun |
 
-None of these values has been checked against hardware or the combined model by this work.
+### Combined-model frame tree (owned by openamr-upperbody-sw)
+
+The upstream OpenArm model in sections 2 to 5 stays separate from this combined robot model. This inventory gives no transform beyond the values above.
+
+```
+base_footprint
+└─ base_link
+   └─ lift column base                (z 0.304 from base_footprint)
+      └─ lift_joint                   (prismatic, 0 to 0.350)
+         └─ lift_carriage_link
+            ├─ openarm_left_base_link
+            └─ openarm_right_base_link
+```
+
+### Superseded fixed-mast values (kept as history)
+
+| Configuration ID | Status |
+|---|---|
+| `mast_1350` | Installed shoulder-axis height, 1350 mm (P-03 Decision Addendum revision 18.2, 28 September 2026); superseded by P-03 rev18.8/18.9 |
+| `mast_1300`, `mast_1400`, `mast_1450` | Indexed positions available for assessment; not installed without a recorded decision; superseded by P-03 rev18.8/18.9 |
+
+Superseded by P-03 rev18.8/18.9: "The mast top is 1500 mm above the floor and the maximum assembled height is 1700 mm; positions above 1450 mm are not provided by the 2.0 mast. The fixed mast is the 2.0 configuration; the lift is deferred to OpenAMRobot 3.0."
+
+None of these values has been checked against hardware, CAD or the combined model by this work.
 
 ## 7. Missing inputs (no values guessed)
 
-1. **Shoulder-axis datum:** which OpenArm frame the "shoulder-axis height" refers to (`openarm_*_base_link` origin, the joint1 axis at +0.0625 m in Y, or the joint2 axis). This is needed before any mast ID can become a transform.
-2. **Base → mast → arm-mount transforms** for each `mast_*` ID: xyz/rpy of each arm base link relative to the mobile-base frame, including lateral spacing and mount orientation. The upstream value (±0.031 m, z 0.698 m on `openarm_body_link0`) describes Enactic's body, not the OpenAMRobot mast.
-3. **Body usage:** the combined OpenAMRobot 2.0 model uses the custom fixed mast without the OpenArm supplier body; the OpenArm J1_A plates are attached directly to the mast. The upstream OpenArm body is retained only as upstream-model context.
-4. **Mast and base collision geometry**, and the allowed-collision matrix between mast, base and arms.
+1. **Shoulder-axis datum (decided, P-03 rev19.0 item 17):** the shoulder is the height of `openarm_{side}_base_link` (J1_A); see section 6. Earlier open question, superseded: which OpenArm frame the "shoulder-axis height" refers to (`openarm_*_base_link` origin, the joint1 axis at +0.0625 m in Y, or the joint2 axis).
+2. **Base → lift column → arm-mount transforms** for each `column`, `base_plate` and lift-stop configuration, built from the values in section 6 into the combined model by openamr-upperbody-sw and checked there. The upstream value (±0.031 m, z 0.698 m on `openarm_body_link0`) describes Enactic's body, not the OpenAMRobot lift column. Superseded wording (P-03 rev18.8/18.9): "Base → mast → arm-mount transforms for each `mast_*` ID".
+3. **Body usage:** the combined OpenAMRobot 2.0 model uses the lift column with option B (P-03 rev19.0 item 18) without the OpenArm supplied body (openarm_body_link0 removed). The upstream OpenArm body is retained only as upstream-model context. Superseded by P-03 rev18.8/18.9: "the custom fixed mast without the OpenArm supplier body; the OpenArm J1_A plates are attached directly to the mast".
+4. **Lift column and base collision geometry**, and the allowed-collision matrix between lift column, base and arms. Superseded wording (P-03 rev18.8/18.9): "mast and base collision geometry".
 5. **TCP definition** for OpenAMRobot tools, and whether the upstream grasp frame is adopted.
 6. **Measured mass/inertia** of the as-built arms, grippers and any tool; payload is not claimed.
 7. **Mounted-pose calibration** procedure and data.
@@ -98,5 +126,5 @@ None of these values has been checked against hardware or the combined model by 
 
 ## 8. Documentation discrepancies (reported, not edited here)
 
-- [`openamr-upperbody-sw` README @ `d090ec5`](https://github.com/openAMRobot/openamr-upperbody-sw/blob/d090ec545f4450e4c94335dded6e2f001cf494d6/README.md) still describes an actuated lift ("Lift control", "base + lift + arm", "arm + lift" planning groups). This is stale for 2.0: the mast is fixed and the lift is deferred.
+- [`openamr-upperbody-sw` README @ `d090ec5`](https://github.com/openAMRobot/openamr-upperbody-sw/blob/d090ec545f4450e4c94335dded6e2f001cf494d6/README.md) describes an actuated lift ("Lift control", "base + lift + arm", "arm + lift" planning groups). With the lift column (P-03 rev19.0) this matches the 2.0 direction; its details are not checked here. Superseded by P-03 rev18.8/18.9: "This is stale for 2.0: the mast is fixed and the lift is deferred."
 - This repository's `README.md` (main @ `6198d48`) still names **ReBot** as the secondary portability target. The current secondary fixture is **SO-101**.

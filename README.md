@@ -13,7 +13,7 @@ The OpenAMRobot 2.0 cycle is focused on integrating a real bimanual manipulation
 - **Reference Device Packages:** **OpenArm 2.0** as the primary physical manipulation path; **SO-101** as portability/API-validation fixture.
 - **Normalized execution semantics:** per-action timeout, typed failure results, constrained placement, bounded abort/retract behavior and controller-ownership handover.
 
-Software and common integration logic live here. Physical upper-body structure, mast and arm mounting belong in `openamr-upperbody-hw`; upper-body hardware-specific integration belongs in the corresponding `openamr-upperbody-*` repositories.
+Software and common integration logic live here. Physical upper-body structure, lift column and arm mounting belong in `openamr-upperbody-hw`; upper-body hardware-specific integration belongs in the corresponding `openamr-upperbody-*` repositories.
 
 ## OpenAMRobot 2.0 scope
 

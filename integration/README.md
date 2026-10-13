@@ -21,7 +21,7 @@ A development-only, headless bring-up of the **upstream** OpenArm 2.0 bimanual m
 | `…/launch/openarm_v2_fake_moveit.launch.py` | The above plus headless `move_group` (upstream v2.0 MoveIt config, OMPL) |
 | `…/openarm_v2_fake_baseline/fake_profile.py` | Fake-only argument check, v2.0 xacro expansion, mock-plugin check, model parsing |
 | `…/test/` | pytest suites run through `colcon test` |
-| `integration/openarm_v2_combined_model_inventory.md` | Handoff inventory for the combined base + mast + arms model owner |
+| `integration/openarm_v2_combined_model_inventory.md` | Handoff inventory for the combined base + lift + arms model owner |
 
 ## Pinned upstream
 
