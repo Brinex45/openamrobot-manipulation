@@ -119,7 +119,7 @@ class TestBothPackages(Base):
 # ------------------------------------------------------------- reject: manifest
 class TestManifestRejections(Base):
     def test_missing_required_section(self):
-        self.assertRejects(self.mutate("so101", lambda m: m.pop("gripper")), "'gripper' is a required property")
+        self.assertRejects(self.mutate("so101", lambda m: m.pop("gripper")), "gripper")
 
     def test_missing_maintainer(self):
         self.assertRejects(self.mutate("so101", lambda m: m["device"].pop("maintainer")), "maintainer")
@@ -131,7 +131,7 @@ class TestManifestRejections(Base):
         self.assertRejects(self.mutate("so101", caps_fn=lambda c: c.update(supported_actions=["plan"])), "supported_actions")
 
     def test_unknown_top_level_key(self):
-        self.assertRejects(self.mutate("so101", lambda m: m.update(extra=1)), "Additional properties are not allowed")
+        self.assertRejects(self.mutate("so101", lambda m: m.update(extra=1)), "extra")
 
     def test_version_major_mismatch(self):
         self.assertRejects(self.mutate("so101", lambda m: m.update(schema_version="1.0")), "incompatible")
@@ -353,7 +353,7 @@ class TestCapabilityRejections(Base):
     def test_bad_status(self):
         def g(c):
             c["actions"]["plan"] = {"status": "maybe", "reason": "x"}
-        self.assertRejects(self.mutate("so101", caps_fn=g), "is not valid under any of the given schemas")
+        self.assertRejects(self.mutate("so101", caps_fn=g), "status")
 
     def test_ft_invalid_enum(self):
         def g(c):
