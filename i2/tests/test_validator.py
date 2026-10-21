@@ -588,6 +588,7 @@ class TestActionRejected(Base):
 
     def test_gripper_command_outside_supported_commands_rejected(self):
         m, c = self.load("so101")
+        m["gripper"]["supported_commands"] = ["OPEN"]
         c["capabilities"]["actions"]["gripper_command"] = {"status": "supported", "validation": validated()}
         self.assertRejectedNoMotion(
             vp.resolve_request(m, c, "gripper_command", gripper_command="FORCE_LIMITED_CLOSE"), "gripper_command")

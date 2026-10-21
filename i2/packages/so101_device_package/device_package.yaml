@@ -38,7 +38,7 @@ ros2_control:
     required_types: [joint_trajectory_controller/JointTrajectoryController]
     instances:
       arm: {name: arm_controller, type: joint_trajectory_controller/JointTrajectoryController}
-      gripper: {name: gripper_controller, type: PENDING}
+      gripper: {name: gripper_controller, type: joint_trajectory_controller/JointTrajectoryController}
   fake_hardware: true
 
 moveit:
@@ -61,10 +61,10 @@ gripper:
   joint_count: 1
   command_interfaces: [position]
   state_interfaces: [position]
-  supported_commands: [OPEN, CLOSE, GOTO_POSITION]
-  reports_effort: PENDING
-  contact_detection: PENDING
-  object_detection: PENDING
+  supported_commands: []
+  reports_effort: false
+  contact_detection: false
+  object_detection: false
 
 capabilities:
   config: capabilities/capabilities.yaml
@@ -87,8 +87,7 @@ lerobot:
 
 pending:
   - {path: /device/manipulators/0/manipulator_id, reason: "Placeholder UUID; real manipulator_id not yet assigned"}
-  - {path: /ros2_control/controllers/instances/gripper/type, reason: "Current configs disagree; do not freeze"}
-  - {path: /gripper/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION indicated by sim/fake config only; final set TBC, not validated by an I1 GripperCommand test"}
+  - {path: /gripper/supported_commands, reason: "No common I1 GripperCommand operations have been validated for this position-joint fixture"}
   - {path: /gripper/command_interfaces, reason: "Sim/fake configuration only"}
   - {path: /gripper/state_interfaces, reason: "Sim/fake configuration only"}
   - {path: /device/configuration/mounting, reason: "Value set not final (fixed | mobile_base)"}
