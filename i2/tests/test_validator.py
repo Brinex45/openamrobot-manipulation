@@ -298,6 +298,21 @@ class TestJointRejections(Base):
 
 
 # ------------------------------------------------------------- reject: gripper
+    def test_joint_absent_from_referenced_description_is_rejected(self):
+        def mutate_manifest(m):
+            rc = m["ros2_control"]
+            bad_joint = "openarm_left_joint_that_does_not_exist"
+            rc["joints"][0] = bad_joint
+            left_id = next(
+                x["manipulator_id"]
+                for x in m["device"]["manipulators"]
+                if x["name"] == "left_arm"
+            )
+            rc["manipulator_joints"][left_id][0] = bad_joint
+
+        rep = self.mutate("openarm", manifest_fn=mutate_manifest)
+        self.assertRejects(rep, "not found in referenced description")
+
 class TestGripperRejections(Base):
     def test_unknown_gripper_command(self):
         def f(m):

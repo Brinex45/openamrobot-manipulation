@@ -1,5 +1,4 @@
-# OpenArm 2.0 Device Package manifest. DRAFT: only values stated in A5 section 14 are filled;
-# everything else is PENDING or listed in the pending registry. Joint/group names are illustrative.
+# OpenArm 2.0 Device Package manifest. Unresolved integration values remain PENDING.
 schema_version: "0.5"
 i1_api_version: "1.0"
 
@@ -31,32 +30,38 @@ driver:
 
 ros2_control:
   hardware: {plugin: PENDING, lifecycle: [configure, activate, deactivate]}
+  description_ref: description/urdf/openarm_v2.urdf
   joints:
-    - left_joint1
-    - left_joint2
-    - left_joint3
-    - left_joint4
-    - left_joint5
-    - left_joint6
-    - left_joint7
-    - right_joint1
-    - right_joint2
-    - right_joint3
-    - right_joint4
-    - right_joint5
-    - right_joint6
-    - right_joint7
-    - left_finger_joint
-    - right_finger_joint
+    - openarm_left_joint1
+    - openarm_left_joint2
+    - openarm_left_joint3
+    - openarm_left_joint4
+    - openarm_left_joint5
+    - openarm_left_joint6
+    - openarm_left_joint7
+    - openarm_right_joint1
+    - openarm_right_joint2
+    - openarm_right_joint3
+    - openarm_right_joint4
+    - openarm_right_joint5
+    - openarm_right_joint6
+    - openarm_right_joint7
+    - openarm_left_finger_joint1
+    - openarm_right_finger_joint1
   manipulator_joints:
-    c8b217e5-49cc-58ca-bafe-fae6c6192900: [left_joint1, left_joint2, left_joint3, left_joint4, left_joint5, left_joint6, left_joint7]
-    9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7: [right_joint1, right_joint2, right_joint3, right_joint4, right_joint5, right_joint6, right_joint7]
-  gripper_joints: [left_finger_joint, right_finger_joint]
-  command_interfaces: [position, velocity, effort]
-  state_interfaces: [position, velocity, effort]
+    c8b217e5-49cc-58ca-bafe-fae6c6192900: [openarm_left_joint1, openarm_left_joint2, openarm_left_joint3, openarm_left_joint4, openarm_left_joint5, openarm_left_joint6, openarm_left_joint7]
+    9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7: [openarm_right_joint1, openarm_right_joint2, openarm_right_joint3, openarm_right_joint4, openarm_right_joint5, openarm_right_joint6, openarm_right_joint7]
+  gripper_joints: [openarm_left_finger_joint1, openarm_right_finger_joint1]
+  command_interfaces: [position]
+  state_interfaces: [position, velocity]
   controllers:
     config: ros2_control/controllers.yaml
-    required_types: [joint_trajectory_controller/JointTrajectoryController]
+    required_types: [joint_trajectory_controller/JointTrajectoryController, position_controllers/GripperActionController]
+    instances:
+      left_arm_controller: {name: left_arm_controller, type: joint_trajectory_controller/JointTrajectoryController}
+      right_arm_controller: {name: right_arm_controller, type: joint_trajectory_controller/JointTrajectoryController}
+      left_gripper_controller: {name: left_gripper_controller, type: position_controllers/GripperActionController}
+      right_gripper_controller: {name: right_gripper_controller, type: position_controllers/GripperActionController}
   fake_hardware: true
 
 moveit:
@@ -86,12 +91,7 @@ capabilities:
   config: capabilities/capabilities.yaml
 
 simulation:
-  supported: true
-  backend: PENDING
-  description_ref: description/urdf/openarm.urdf.xacro
-  fake_hardware: true
-  config: simulation/sim_config.yaml
-  selection: PENDING
+  supported: false
 
 diagnostics:
   interface: PENDING
@@ -107,8 +107,6 @@ pending:
   - {path: /device/groups, reason: "LEFT/RIGHT/BIMANUAL membership TBC"}
   - {path: /device/configuration/mounting, reason: "TBC; value set not final"}
   - {path: /device/workspace_envelope, reason: "TBC (BOUNDING_BOX or REACH_RADIUS)"}
-  - {path: /ros2_control/joints, reason: "Joint names illustrative; confirm against actual OpenArm package"}
-  - {path: /ros2_control/gripper_joints, reason: "Gripper joint names/count illustrative; confirm against actual package"}
   - {path: /moveit/planning_groups, reason: "Group names and mapping TBC"}
   - {path: /moveit/named_poses, reason: "Named poses and stow_pose TBC; empty until confirmed"}
   - {path: /gripper/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION per A5 s14; FORCE_LIMITED_CLOSE and effort reporting TBC"}

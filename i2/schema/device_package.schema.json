@@ -143,7 +143,8 @@
             }
           }
         },
-        "fake_hardware": {"type": "boolean"}
+        "fake_hardware": {"type": "boolean"},
+        "description_ref": {"$ref": "#/$defs/str"}
       }
     },
     "moveit": {

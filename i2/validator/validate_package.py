@@ -27,6 +27,7 @@ import json
 import re
 import sys
 import uuid
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 
@@ -382,6 +383,8 @@ def validate_package(root: str | Path, strict: bool = False) -> Report:
     path_fields = {
         "/driver/config": d["driver"]["config"],
         "/ros2_control/controllers/config": d["ros2_control"]["controllers"]["config"],
+        **({"/ros2_control/description_ref": d["ros2_control"]["description_ref"]}
+           if "description_ref" in d["ros2_control"] else {}),
         "/moveit/config_ref": d["moveit"]["config_ref"],
         "/moveit/kinematics": d["moveit"]["kinematics"],
         "/moveit/joint_limits": d["moveit"]["joint_limits"],
@@ -397,6 +400,29 @@ def validate_package(root: str | Path, strict: bool = False) -> Report:
                 path_fields[f"/simulation/{k}"] = sim[k]
     for ptr, val in path_fields.items():
         _check_path(root, val, ptr, rep)
+
+    # A referenced robot description is the source of truth for declared joints.
+    description_ref = d["ros2_control"].get("description_ref")
+    if description_ref:
+        description_path = root / description_ref
+        if description_path.is_file():
+            try:
+                xml_root = ET.parse(description_path).getroot()
+                declared_joints = {
+                    element.get("name")
+                    for element in xml_root.findall(".//joint")
+                    if element.get("name")
+                }
+                for joint in d["ros2_control"]["joints"]:
+                    if joint not in declared_joints:
+                        rep.err(
+                            f"ros2_control joint {joint!r} not found in referenced description "
+                            f"{description_ref!r}"
+                        )
+            except ET.ParseError as exc:
+                rep.err(
+                    f"ros2_control.description_ref {description_ref!r}: invalid URDF/XML: {exc}"
+                )
 
     # 4. Capabilities file
     caps = None
