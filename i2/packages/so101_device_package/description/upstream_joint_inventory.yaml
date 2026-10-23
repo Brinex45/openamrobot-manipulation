@@ -1,0 +1,12 @@
+# Joint inventory extracted from the upstream SO-101 description.
+# Source: https://github.com/adoodevv/so101_ros2
+# Revision: 0305e03ab54e64aae9263fcbf339622e654012f3
+# This inventory is not a substitute for the full URDF/Xacro dependency tree.
+source_file: so101_description/urdf/so101_robot.urdf.xacro
+joints:
+  - shoulder_pan
+  - shoulder_lift
+  - elbow_flex
+  - wrist_flex
+  - wrist_roll
+  - gripper

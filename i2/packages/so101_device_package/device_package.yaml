@@ -70,12 +70,7 @@ capabilities:
   config: capabilities/capabilities.yaml
 
 simulation:
-  supported: true
-  backend: Gazebo Harmonic
-  description_ref: description/urdf/so101.urdf.xacro
-  fake_hardware: true
-  config: simulation/sim_config.yaml
-  selection: PENDING
+  supported: false
 
 diagnostics:
   interface: PENDING

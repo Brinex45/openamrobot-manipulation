@@ -64,6 +64,30 @@ class TestBothPackages(Base):
             self.assertTrue(r.valid, f"{k}: {r.errors}")
         self.assertEqual(reps["so101"].schema_hash, reps["openarm"].schema_hash)
 
+    def test_so101_joint_names_match_pinned_upstream_inventory(self):
+        package = PKGS["so101"]
+
+        manifest = yaml.safe_load(
+            (package / "device_package.yaml").read_text()
+        )
+        inventory = yaml.safe_load(
+            (package / "description/upstream_joint_inventory.yaml").read_text()
+        )
+
+        declared = set(manifest["ros2_control"]["joints"])
+        upstream = set(inventory["joints"])
+
+        self.assertEqual(
+            declared,
+            upstream,
+            "SO-101 manifest joint names differ from the pinned upstream inventory",
+        )
+        self.assertEqual(
+            len(inventory["joints"]),
+            len(upstream),
+            "Upstream inventory contains duplicate joint names",
+        )
+
     def test_pending_is_reported_not_validated(self):
         for k, v in PKGS.items():
             r = vp.validate_package(v)
@@ -480,17 +504,61 @@ class TestCapabilityRejections(Base):
             c["abort_modes_by_selector"] = {"LEFT": ["RETRACT"]}
         self.assertRejects(self.mutate("openarm", caps_fn=g), "must include STOP_ONLY")
 
+    def test_compliant_hold_rejects_when_control_is_false(self):
+        def g(c):
+            c["force_torque_sensing"] = "DIRECT_FT"
+            c["has_compliant_control"] = False
+            c["actions"]["compliant_hold"] = {
+                "status": "supported",
+                "validation": validated(),
+            }
+
+        self.assertRejects(
+            self.mutate("so101", caps_fn=g),
+            "has_compliant_control",
+        )
+
+    def test_compliant_hold_rejects_when_control_is_pending(self):
+        def g(c):
+            c["force_torque_sensing"] = "DIRECT_FT"
+            c["has_compliant_control"] = "PENDING"
+            c["actions"]["compliant_hold"] = {
+                "status": "supported",
+                "validation": validated(),
+            }
+
+        self.assertRejects(
+            self.mutate("openarm", caps_fn=g),
+            "has_compliant_control",
+        )
 
 # ------------------------------------------------------- reject: sim / pending
 class TestSimAndPendingRejections(Base):
     def test_sim_fake_hardware_mismatch(self):
         def f(m):
+            m["simulation"].update({
+                "supported": True,
+                "backend": "Gazebo Harmonic",
+                "description_ref": "description/urdf/so101.urdf.xacro",
+                "fake_hardware": True,
+                "config": "simulation/sim_config.yaml",
+                "selection": "test_fixture",
+            })
             m["ros2_control"]["fake_hardware"] = False
+
         self.assertRejects(self.mutate("so101", f), "does not match")
 
     def test_sim_fake_false_needs_hardware_mode(self):
         def f(m):
-            m["simulation"]["fake_hardware"] = False
+            m["simulation"].update({
+                "supported": True,
+                "backend": "Gazebo Harmonic",
+                "description_ref": "description/urdf/so101.urdf.xacro",
+                "fake_hardware": False,
+                "config": "simulation/sim_config.yaml",
+                "selection": "test_fixture",
+            })
+
         self.assertRejects(self.mutate("so101", f), "hardware_mode")
 
     def test_sim_unsupported_needs_no_sim_fields(self):
@@ -564,11 +632,28 @@ class TestActionRejected(Base):
         self.assertIn(capability, res["message"])        # message names the capability
         self.assertIs(res["device_invoked"], False)      # never calls into the device
         self.assertIs(res["motion"], False)              # no motion attempted
+        self.assertIs(res["dispatch"], False)
 
     def test_unsupported_contact_actions_rejected_on_so101(self):
         m, c = self.load("so101")
         for a in ("move_until_contact", "compliant_hold"):
             self.assertRejectedNoMotion(vp.resolve_request(m, c, a), a)
+
+    def test_so101_gripper_command_rejected_when_no_commands_are_supported(self):
+        m, c = self.load("so101")
+
+        self.assertEqual(m["gripper"]["supported_commands"], [])
+
+        # Isolate the supported_commands gate. The real fixture remains
+        # planned until the common I1 GripperCommand contract is validated.
+        c["capabilities"]["actions"]["gripper_command"]["status"] = "supported"
+
+        res = vp.resolve_request(
+            m, c, "gripper_command", gripper_command="OPEN"
+        )
+
+        self.assertRejectedNoMotion(res, "gripper_command")
+        self.assertIn("supported_commands", res["message"])
 
     def test_pending_cartesian_is_rejected_on_so101(self):
         m, c = self.load("so101")
@@ -619,6 +704,47 @@ class TestActionRejected(Base):
         with self.assertRaises(ValueError):
             vp.resolve_request(m, c, "cartesian_moton")
 
+    def test_compliant_hold_rejected_when_control_is_false(self):
+        m, c = self.load("so101")
+        c["capabilities"]["force_torque_sensing"] = "DIRECT_FT"
+        c["capabilities"]["has_compliant_control"] = False
+        c["capabilities"]["actions"]["compliant_hold"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+
+        res = vp.resolve_request(m, c, "compliant_hold")
+        self.assertRejectedNoMotion(res, "compliant_hold")
+        self.assertIs(res["dispatch"], False)
+        self.assertIn("has_compliant_control", res["message"])
+
+    def test_compliant_hold_rejected_when_control_is_pending(self):
+        m, c = self.load("openarm")
+        c["capabilities"]["force_torque_sensing"] = "DIRECT_FT"
+        c["capabilities"]["has_compliant_control"] = "PENDING"
+        c["capabilities"]["actions"]["compliant_hold"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+
+        res = vp.resolve_request(m, c, "compliant_hold")
+        self.assertRejectedNoMotion(res, "compliant_hold")
+        self.assertIs(res["dispatch"], False)
+        self.assertIn("has_compliant_control", res["message"])
+
+    def test_compliant_hold_rejected_when_control_is_missing(self):
+        m, c = self.load("openarm")
+        c["capabilities"]["force_torque_sensing"] = "DIRECT_FT"
+        c["capabilities"].pop("has_compliant_control", None)
+        c["capabilities"]["actions"]["compliant_hold"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+
+        res = vp.resolve_request(m, c, "compliant_hold")
+        self.assertRejectedNoMotion(res, "compliant_hold")
+        self.assertIs(res["dispatch"], False)
+        self.assertIn("has_compliant_control", res["message"])
 
 if __name__ == "__main__":
     unittest.main()

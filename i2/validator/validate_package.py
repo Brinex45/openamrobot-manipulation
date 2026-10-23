@@ -294,8 +294,13 @@ def resolve_request(manifest: dict, caps: dict, action: str, *,
     status = entry["status"]
 
     def reject(msg: str) -> dict:
-        return {"result": "ACTION_REJECTED", "message": f"{action}: {msg}",
-                "device_invoked": False, "motion": False}
+        return {
+            "result": "ACTION_REJECTED",
+            "message": f"{action}: {msg}",
+            "dispatch": False,
+            "device_invoked": False,
+            "motion": False,
+        }
 
     if status in ("planned", "unsupported"):
         return reject(f"{status}: {entry.get('reason', 'no reason declared')}")
@@ -303,6 +308,8 @@ def resolve_request(manifest: dict, caps: dict, action: str, *,
         return reject("experimental: development/test enablement required")
     if action in CONTACT_ACTIONS and c["force_torque_sensing"] in ("UNKNOWN", PENDING):
         return reject("force_torque_sensing is not available on this device")
+    if action == "compliant_hold" and c.get("has_compliant_control") is not True:
+        return reject("has_compliant_control is not explicitly true")
     if action == "gripper_command":
         if not manifest["gripper"]["has_gripper"]:
             return reject("device has no gripper")
@@ -603,7 +610,10 @@ def _gate(name, st, acts, c, m, id_set, arm_cover, named, rep) -> None:
                     f"(missing: {sorted(uncovered)})")
     elif name in CONTACT_ACTIONS and ft in ("UNKNOWN", PENDING):
         rep.err(f"actions.{name}: {st} requires force_torque_sensing other than UNKNOWN/PENDING (found {ft})")
-
+    elif name == "compliant_hold" and c.get("has_compliant_control") is not True:
+        rep.err(
+            f"actions.{name}: {st} requires has_compliant_control to be explicitly true"
+        )
 
 def _collect_pending(manifest: dict, caps: dict | None, rep: Report) -> None:
     reasons = {}
