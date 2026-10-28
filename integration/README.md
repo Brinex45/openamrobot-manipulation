@@ -111,11 +111,11 @@ Fake trajectory success only shows that mock hardware followed the commanded pos
 
 ## Current validation boundaries
 
-- **Schema/conformance:** Local tests only; not hosted CI acceptance.
+- **Schema/conformance:** 103 tests passed in the local schema suite; hosted `quality/test` also passed on reviewed PR head `878b3ca` (run [#40658921655](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/40658921655), job [#122716742748](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/40658921655/job/122716742748)).
 - **Fake-hardware integration:** Local build and tests only.
 - **Synthetic acceleration values:** Planning placeholders only, not hardware-qualified.
 - **MoveIt gripper action execution:** Both grippers have local fake-profile plan-and-execute test coverage; upstream configuration and physical-device acceptance remain unverified.
 - **Physical hardware, real CAN operation, and device acceptance:** Not validated.
-- **A3/I1 contract reference and acceptance record:** Exact revision and acceptance record still require confirmation from the contract owner.
+- **A3/I1 contract:** Adnan accepted A3/I1 document Revision v2 / I1 API v1.0 and the observation-validity and `CompliantHold` decisions in [PR conversation](https://github.com/openAMRobot/openamrobot-manipulation/pull/20#issuecomment-6334318786). Canonical I1 interface changes and cross-repository alignment remain outstanding.
 - **Accepted A3/I1 decisions:** Adnan accepted the unavailable-versus-measured-negative observation semantics and `CompliantHold` rejection gates. The corresponding canonical I1 contract changes remain outstanding.
-- **Hosted test gate:** The local test results above must not be presented as hosted Actions evidence. The skipped `repository-quality / quality/test` gate requires coordination with the repository maintainers.
+- **Hosted test gate:** `repository-quality / quality/test` passed on reviewed PR head `878b3ca` (run #40658921655). This hosted schema/conformance job does not execute the separate 40-test ROS/fake-hardware integration suite, which remains contributor-local evidence.
