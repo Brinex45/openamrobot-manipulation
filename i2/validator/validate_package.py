@@ -307,7 +307,7 @@ def resolve_request(manifest: dict, caps: dict, action: str, *,
         return reject(f"{status}: {entry.get('reason', 'no reason declared')}")
     if status == "experimental" and not dev_test_enabled:
         return reject("experimental: development/test enablement required")
-    if action in CONTACT_ACTIONS and c["force_torque_sensing"] in ("UNKNOWN", PENDING):
+    if action in CONTACT_ACTIONS and c.get("force_torque_sensing", "UNKNOWN") in ("UNKNOWN", PENDING):
         return reject("force_torque_sensing is not available on this device")
     if action == "compliant_hold" and c.get("has_compliant_control") is not True:
         return reject("has_compliant_control is not explicitly true")
@@ -619,7 +619,7 @@ def _cross_checks(m: dict, caps: dict | None, rep: Report) -> None:
 
 
 def _gate(name, st, acts, c, m, id_set, arm_cover, named, rep) -> None:
-    ft = c["force_torque_sensing"]
+    ft = c.get("force_torque_sensing", "UNKNOWN")
     plan_ok = {"supported"} if st == "supported" else {"supported", "experimental"}
     if name == "named_pose_move" and not any(named.values()):
         rep.err(f"actions.{name}: {st} requires at least one named pose in moveit.named_poses")

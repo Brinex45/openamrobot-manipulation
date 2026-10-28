@@ -133,3 +133,56 @@ def test_execute_planned_left_arm_on_fake_controller(probe):
             break
         assert time.monotonic() < deadline, pos
         probe.spin_for(0.2)
+
+@pytest.mark.parametrize('side', fp.ARM_SIDES)
+def test_execute_planned_gripper_on_fake_controller(probe, side):
+    """Plan and execute a bounded gripper motion through MoveIt."""
+    group = f'{side}_gripper'
+    joint = fp.GRIPPER_JOINTS[side][0]
+
+    # Use the URDF-derived limits, not guessed joint bounds.
+    joints = fp.model_joints(probe.robot_description())
+    lower = joints[joint]['lower']
+    upper = joints[joint]['upper']
+
+    # Choose a small, nonzero target strictly inside the model limits.
+    target = lower + 0.2 * (upper - lower)
+    assert lower < target < upper
+
+    response = _plan(probe, group, {joint: target}).motion_plan_response
+    assert response.error_code.val == MoveItErrorCodes.SUCCESS, (
+        f'{side} gripper planning failed: {response.error_code.val}'
+    )
+
+    trajectory = response.trajectory.joint_trajectory
+    assert joint in trajectory.joint_names
+    assert len(trajectory.points) >= 2
+
+    client = ActionClient(probe, ExecuteTrajectory, '/execute_trajectory')
+    assert client.wait_for_server(timeout_sec=10.0)
+
+    send = client.send_goal_async(
+        ExecuteTrajectory.Goal(trajectory=response.trajectory)
+    )
+    rclpy.spin_until_future_complete(probe, send, timeout_sec=10.0)
+    handle = send.result()
+    assert handle is not None and handle.accepted
+
+    result_future = handle.get_result_async()
+    rclpy.spin_until_future_complete(probe, result_future, timeout_sec=60.0)
+    assert result_future.done(), f'{side} gripper execution timed out'
+    assert (
+        result_future.result().result.error_code.val
+        == MoveItErrorCodes.SUCCESS
+    )
+
+    deadline = time.monotonic() + 5.0
+    while True:
+        positions = probe.joint_positions()
+        if abs(positions[joint] - target) < 1e-2:
+            break
+        assert time.monotonic() < deadline, (
+            f'{side} gripper did not reach target: '
+            f'actual={positions.get(joint)}, target={target}'
+        )
+        probe.spin_for(0.2)

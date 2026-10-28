@@ -182,3 +182,28 @@ def test_moveit_controller_mapping_matches_upstream_names():
         assert gripper_name in manager['controller_names']
         assert gripper['type'] == 'GripperCommand'
         assert gripper['joints'] == fp.GRIPPER_JOINTS[side]
+
+
+def test_fake_moveit_gripper_mapping_matches_fake_controllers():
+    """Fake MoveIt config must target the JTC action endpoints."""
+    from ament_index_python.packages import get_package_share_directory
+
+    path = os.path.join(
+        get_package_share_directory('openarm_v2_fake_baseline'),
+        'config',
+        'moveit_controllers_fake.yaml',
+    )
+
+    with open(path) as stream:
+        cfg = yaml.safe_load(stream)
+
+    manager = cfg['moveit_simple_controller_manager']
+
+    for side in fp.ARM_SIDES:
+        name = fp.GRIPPER_CONTROLLERS[side]
+        controller = manager[name]
+
+        assert name in manager['controller_names']
+        assert controller['type'] == 'FollowJointTrajectory'
+        assert controller['action_ns'] == 'follow_joint_trajectory'
+        assert controller['joints'] == fp.GRIPPER_JOINTS[side]

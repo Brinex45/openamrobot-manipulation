@@ -88,6 +88,63 @@ class TestBothPackages(Base):
             "Upstream inventory contains duplicate joint names",
         )
 
+    def test_openarm_gripper_action_controllers_use_singular_joint_parameter(self):
+        config_path = PKGS["openarm"] / "ros2_control" / "controllers.yaml"
+        config = yaml.safe_load(config_path.read_text())
+        manager = config["controller_manager"]["ros__parameters"]
+
+        expected = {
+            "left_gripper_controller": "openarm_left_finger_joint1",
+            "right_gripper_controller": "openarm_right_finger_joint1",
+        }
+        for controller_name, joint_name in expected.items():
+            with self.subTest(controller=controller_name):
+                self.assertEqual(
+                    manager[controller_name]["type"],
+                    "position_controllers/GripperActionController",
+                )
+                params = config[controller_name]["ros__parameters"]
+                self.assertEqual(params.get("joint"), joint_name)
+                self.assertNotIn(
+                    "joints",
+                    params,
+                    "GripperActionController requires singular 'joint', not JTC-style 'joints'",
+                )
+
+    def test_i1_observation_validity_conformance_vectors_are_complete(self):
+        fixture_path = ROOT / "tests" / "fixtures" / "observation_validity_cases.yaml"
+        fixture = yaml.safe_load(fixture_path.read_text())
+        cases = {case["name"]: case for case in fixture["cases"]}
+
+        expected_names = {
+            "contact-capability-false",
+            "contact-capability-pending",
+            "object-capability-false",
+            "object-capability-pending",
+            "valid-negative-contact",
+            "valid-negative-object",
+        }
+        self.assertEqual(set(cases), expected_names)
+
+        for name in (
+            "contact-capability-false",
+            "contact-capability-pending",
+            "object-capability-false",
+            "object-capability-pending",
+        ):
+            with self.subTest(case=name):
+                case = cases[name]
+                self.assertIs(case["expected_valid"], False)
+                self.assertEqual(case["expected_interpretation"], "unavailable")
+                self.assertNotIn("expected_value", case)
+
+        for name in ("valid-negative-contact", "valid-negative-object"):
+            with self.subTest(case=name):
+                case = cases[name]
+                self.assertIs(case["expected_valid"], True)
+                self.assertIs(case["expected_value"], False)
+                self.assertEqual(case["expected_interpretation"], "measured_negative")
+
     def test_pending_is_reported_not_validated(self):
         for k, v in PKGS.items():
             r = vp.validate_package(v)
@@ -760,6 +817,40 @@ class TestActionRejected(Base):
         self.assertRejectedNoMotion(res, "compliant_hold")
         self.assertIs(res["dispatch"], False)
         self.assertIn("has_compliant_control", res["message"])
+
+    def test_compliant_hold_rejected_when_force_torque_sensing_is_missing_or_unavailable(self):
+        for state in ("MISSING", "UNKNOWN", "PENDING"):
+            with self.subTest(force_torque_sensing=state):
+                m, c = self.load("openarm")
+                if state == "MISSING":
+                    c["capabilities"].pop("force_torque_sensing", None)
+                else:
+                    c["capabilities"]["force_torque_sensing"] = state
+
+                c["capabilities"]["has_compliant_control"] = True
+                c["capabilities"]["actions"]["compliant_hold"] = {
+                    "status": "supported",
+                    "validation": validated(),
+                }
+
+                res = vp.resolve_request(m, c, "compliant_hold")
+                self.assertRejectedNoMotion(res, "compliant_hold")
+                self.assertIn("force_torque_sensing", res["message"])
+
+    def test_compliant_hold_dispatches_when_all_gates_are_satisfied(self):
+        m, c = self.load("openarm")
+        c["capabilities"]["force_torque_sensing"] = "DIRECT_FT"
+        c["capabilities"]["has_compliant_control"] = True
+        c["capabilities"]["actions"]["compliant_hold"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+
+        res = vp.resolve_request(m, c, "compliant_hold")
+        self.assertIsNone(res["result"])
+        self.assertIs(res["dispatch"], True)
+        self.assertIs(res["device_invoked"], True)
+        self.assertIsNone(res["motion"])
 
 if __name__ == "__main__":
     unittest.main()

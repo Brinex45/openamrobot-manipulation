@@ -1,0 +1,42 @@
+# I1 observation-validity conformance vectors accepted by the contract owner.
+# These are expected contract outcomes, not evidence of runtime/device execution.
+# When the owning I1 interface implementation is available, bind these vectors to it.
+cases:
+  - name: contact-capability-false
+    capability: contact_detection
+    capability_state: false
+    observation: contact_detected
+    expected_valid: false
+    expected_interpretation: unavailable
+  - name: contact-capability-pending
+    capability: contact_detection
+    capability_state: PENDING
+    observation: contact_detected
+    expected_valid: false
+    expected_interpretation: unavailable
+  - name: object-capability-false
+    capability: object_detection
+    capability_state: false
+    observation: object_detected
+    expected_valid: false
+    expected_interpretation: unavailable
+  - name: object-capability-pending
+    capability: object_detection
+    capability_state: PENDING
+    observation: object_detected
+    expected_valid: false
+    expected_interpretation: unavailable
+  - name: valid-negative-contact
+    capability: contact_detection
+    capability_state: true
+    observation: contact_detected
+    expected_valid: true
+    expected_value: false
+    expected_interpretation: measured_negative
+  - name: valid-negative-object
+    capability: object_detection
+    capability_state: true
+    observation: object_detected
+    expected_valid: true
+    expected_value: false
+    expected_interpretation: measured_negative

@@ -42,7 +42,11 @@ def _move_group(context):
         .robot_description_semantic(file_path=f'{CONFIG_DIR}/openarm_bimanual.srdf')
         .robot_description_kinematics(file_path=f'{CONFIG_DIR}/kinematics.yaml')
         .joint_limits(file_path=f'{CONFIG_DIR}/joint_limits.yaml')
-        .trajectory_execution(file_path=f'{CONFIG_DIR}/moveit_controllers.yaml')
+        .trajectory_execution(
+            file_path=os.path.join(
+                get_package_share_directory('openarm_v2_fake_baseline'),
+                'config',
+                'moveit_controllers_fake.yaml'))
         .planning_pipelines(pipelines=['ompl'], default_planning_pipeline='ompl')
         .to_moveit_configs()
     )

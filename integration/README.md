@@ -76,12 +76,12 @@ ros2 launch openarm_v2_fake_baseline openarm_v2_fake_moveit.launch.py use_fake_h
 
 | Suite | Checks |
 |---|---|
-| `test_fake_profile` (17) | Fake-profile restrictions, application of the synthetic overlay to known joints, rejection of the overlay for non-fake profiles, and MoveIt controller/joint-name configuration mappings |
+| `test_fake_profile` (18) | Fake-profile restrictions, application of the synthetic overlay to known joints, rejection of the overlay for non-fake profiles, and MoveIt controller/joint-name configuration mappings |
 | `test_launch_guard` (4) | Both launch files reject `use_fake_hardware:=false` and a missing argument, with no node started |
 | `test_fake_bringup` (11) | Runtime hardware is mock-only; JSB, both arm JTCs and both gripper JTCs active; `/joint_states` has the 16 actuated joints; four `follow_joint_trajectory` endpoints; bounded trajectories on both arms and both grippers return `SUCCESSFUL` and `/joint_states` reaches the target. Negative cases check wrong endpoint names and a deactivated right-arm controller |
-| `test_moveit_planning` (5) | MoveIt loads the upstream v2.0 configuration and serves planning requests; root-cause check; planning to the upstream `hands_up` state for both arms and execution of a planned left-arm trajectory through the fake controller using the fake-only overlay |
+| `test_moveit_planning` (7) | MoveIt loads the upstream v2.0 configuration and serves planning requests; root-cause check; planning to the upstream `hands_up` state for both arms; execution of a planned left-arm trajectory and plan-and-execute tests for both grippers through fake controllers using the fake-only overlay |
 
-The recorded local package validation is 17 passing fake-profile tests, five passing MoveIt planning tests, and 41 package tests with zero errors, failures or skipped tests. These are local results, not hosted CI results.
+The latest recorded local package validation is 40 integration tests across four suites: 18 fake-profile, four launch-guard, 11 fake-bringup, and seven MoveIt-planning tests, with zero errors, failures or skipped tests. These are local results, not hosted CI results; rerun the suite after documentation and code changes.
 
 ## Known upstream issue: MoveIt planning fails
 
@@ -101,9 +101,9 @@ Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10) r
 
 At the pinned upstream v2.0 revision, `moveit_controllers.yaml` declares the grippers using `GripperCommand` on `gripper_cmd`, while `openarm_bringup` runs them as `JointTrajectoryController` controllers exposing `follow_joint_trajectory`.
 
-The MoveIt controller configuration needs to use `FollowJointTrajectory` to match the controller setup. The integration checks the expected controller and joint-name mappings, but a configuration assertion does **not** prove that the gripper action executes successfully through MoveIt. Direct JTC gripper execution is separate evidence.
+The MoveIt controller configuration needs to use `FollowJointTrajectory` to match the controller setup. The fake-profile suite now plans and executes gripper trajectories through MoveIt for both arms, sends the planned trajectory through the fake execution path, and checks that mock joint state reaches the target. This is local fake-hardware evidence only; it does not prove that the unchanged upstream configuration works, or that real hardware executes gripper actions correctly.
 
-Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11) remains open for the actual MoveIt gripper execution gap until the MoveIt action path is validated. Do not treat the configuration mapping test as end-to-end gripper acceptance.
+Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11) remains open pending owner review of the fake-profile execution evidence and confirmation of the issue's acceptance criteria. The fake-profile tests do not establish upstream configuration correctness or physical-device acceptance.
 
 ## Not validated by this baseline
 
@@ -114,8 +114,8 @@ Fake trajectory success only shows that mock hardware followed the commanded pos
 - **Schema/conformance:** Local tests only; not hosted CI acceptance.
 - **Fake-hardware integration:** Local build and tests only.
 - **Synthetic acceleration values:** Planning placeholders only, not hardware-qualified.
-- **MoveIt gripper action execution:** Not established by controller-configuration checks.
+- **MoveIt gripper action execution:** Both grippers have local fake-profile plan-and-execute test coverage; upstream configuration and physical-device acceptance remain unverified.
 - **Physical hardware, real CAN operation, and device acceptance:** Not validated.
 - **A3/I1 contract reference and acceptance record:** Exact revision and acceptance record still require confirmation from the contract owner.
-- **Unresolved A3/I1 semantics:** Unavailable gripper contact/object data and `CompliantHold` / compliant-control capability gating remain open pending agreement with Adnan and the contract owners.
+- **Accepted A3/I1 decisions:** Adnan accepted the unavailable-versus-measured-negative observation semantics and `CompliantHold` rejection gates. The corresponding canonical I1 contract changes remain outstanding.
 - **Hosted test gate:** The local test results above must not be presented as hosted Actions evidence. The skipped `repository-quality / quality/test` gate requires coordination with the repository maintainers.
