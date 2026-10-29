@@ -79,7 +79,7 @@ ros2 launch openarm_v2_fake_baseline openarm_v2_fake_moveit.launch.py use_fake_h
 | `test_fake_bringup` (11) | Runtime hardware is mock-only; JSB, both arm JTCs and both gripper JTCs active; `/joint_states` has the 16 actuated joints; four `follow_joint_trajectory` endpoints; bounded trajectories on both arms and both grippers return `SUCCESSFUL` and `/joint_states` reaches the target. Negative cases check wrong endpoint names and a deactivated right-arm controller |
 | `test_moveit_planning` (7) | Checks acceleration limits in the pinned upstream configuration, MoveIt planning-service availability, planning to the upstream `hands_up` state for both arms, execution of a planned left-arm trajectory, and plan-and-execute tests for both grippers through fake controllers |
 
-The clean local rerun passed all four integration suites. The current xUnit XML files contain 37 test cases: 15 fake-profile, four launch-guard, 11 fake-bringup, and seven MoveIt-planning cases. All four suites passed. However, `colcon test-result --verbose` reported 41 tests while the four current XML files contain 37 cases; that discrepancy is unresolved, so 37 is the verified XML case count. These are contributor-local results, not hosted CI results.
+The fresh local rerun on 2026-10-29 passed all four integration suites. The four xUnit XML files contain 37 individual pytest cases: 15 fake-profile, four launch-guard, 11 fake-bringup, and seven MoveIt-planning cases. Colcon reports 41 total entries because its summary also counts four suite-level entries from `Testing/20261029-1829/Test.xml`; these are not four additional pytest cases. All four suites passed with zero errors, failures, or skipped tests. These are contributor-local results, not hosted CI results.
 
 ## MoveIt acceleration-limit verification
 
@@ -102,7 +102,7 @@ Fake trajectory success only shows that mock hardware followed the commanded pos
 ## Current validation boundaries
 
 - **Schema/conformance:** The local schema suite reported 103/103 passing on the 2026-10-28 working tree. Hosted workflow run #41 passed both `repository-quality / quality/test` and `repository-quality` on PR head `279f8af`; this predates merge commit `b981425` and the current documentation edits, so fresh hosted verification is required after pushing.
-- **Fake-hardware integration:** A clean local rerun passed all four suites; the current xUnit XML files contain 37 test cases (15 + 4 + 11 + 7). `colcon test-result --verbose` reported 41, which remains inconsistent with the XML total.
+- **Fake-hardware integration:** The fresh local run on 2026-10-29 passed all four suites with zero errors, failures, or skipped tests. The four xUnit XML files contain 37 individual pytest cases (15 + 4 + 11 + 7). Colcon reports 41 total entries because it also counts four suite-level entries in `Testing/20261029-1829/Test.xml`; those are not additional pytest cases.
 - **MoveIt acceleration limits:** Uses the pinned upstream fix; no synthetic local acceleration overlay remains. Fake-profile planning success does not qualify the limits for physical hardware.
 - **MoveIt gripper action execution:** Both grippers have local fake-profile plan-and-execute test coverage; issue #11 remains open pending owner review. Physical-device acceptance remains unverified.
 - **Physical hardware, real CAN operation, and device acceptance:** Not validated.

@@ -16,7 +16,7 @@ All values below come from the pinned upstream sources. They were read from the 
 | xacro args | `robot_preset` (default `default_bimanual`), `collapse_internal_empty_links` (`true`), `emit_grasp_frame` (`false`), `use_fake_hardware` (`true`) |
 | Presets | [`config/robot_presets/`](https://github.com/enactic/openarm_description/tree/14ff67b638ff1c738a1b9a6be8aaa5ce5ed2c831/assets/robot/openarm_v2.0/config/robot_presets): `default_bimanual`, `left_arm`, `right_arm`, `left_arm_with_pinch_gripper`, `right_arm_with_pinch_gripper` |
 | End effector | `pinch_gripper` ([assets](https://github.com/enactic/openarm_description/tree/14ff67b638ff1c738a1b9a6be8aaa5ce5ed2c831/assets/end_effector/pinch_gripper)) |
-| Controllers / MoveIt | [enactic/openarm_ros2 @ `4e837e1`](https://github.com/enactic/openarm_ros2/tree/4e837e1d0dae692ff67b560b69d8d281d7a8d4ed): `openarm_bringup/config/controllers/*.yaml`, `openarm_bimanual_moveit_config/config/openarm_v2.0/` |
+| Controllers / MoveIt | [enactic/openarm_ros2 @ `f0f6b63`](https://github.com/enactic/openarm_ros2/tree/f0f6b639a65b4d05c1b3055825f4da0205e9330d): `openarm_bringup/config/controllers/*.yaml`, `openarm_bimanual_moveit_config/config/openarm_v2.0/` |
 
 ## 2. Frames and mounting (upstream default bimanual preset)
 
@@ -121,7 +121,7 @@ None of these values has been checked against hardware, CAD or the combined mode
 5. **TCP definition** for OpenAMRobot tools, and whether the upstream grasp frame is adopted.
 6. **Measured mass/inertia** of the as-built arms, grippers and any tool; payload is not claimed.
 7. **Mounted-pose calibration** procedure and data.
-8. **MoveIt acceleration limits:** upstream v2.0 `joint_limits.yaml` has none, so MoveIt 2.12 time parameterization fails (see `integration/README.md`).
+8. **MoveIt acceleration limits:** fixed upstream in `openarm_ros2` commit [`f0f6b63`](https://github.com/enactic/openarm_ros2/commit/f0f6b639a65b4d05c1b3055825f4da0205e9330d) (PR #96); the v2.0 joint limits now declare acceleration limits for 16 joints. The configured values have not been physically qualified; see `integration/README.md` and issue [#10](https://github.com/openAMRobot/openarmbot-manipulation/issues/10), which remains open pending owner acceptance.
 9. **Gripper interface choice:** the upstream MoveIt config expects `GripperCommand`, but bring-up provides `JointTrajectoryController`.
 
 ## 8. Documentation discrepancies (reported, not edited here)
