@@ -81,7 +81,7 @@ Source: P-03 Decision Addendum revision 19.0, items 15 to 19 (12 October 2026), 
 | Arm mount | `openarm_{side}_base_link` (J1_A) 0.180 m ahead of the column axis, y +/-0.031 m, rpy 0, 0.166 m above the column top plate; shoulder spacing 307 mm; one 1 mm spacer under each J1_A plate |
 | Column position | column axis x +0.060 from `base_link` at bp000 and +0.110 at bp050 (330 mm behind the chassis front edge) |
 | Arm profile | profile 844 to 1184 mm at L1000 |
-| Head camera | Stereolabs ZED Mini, SKU ZED-121210, on the profile top pitch bracket; lens 22 mm ahead of and 223 mm above the shoulder; pitch hp15 to hp35, baseline hp25 |
+| Head camera | Stereolabs ZED Mini, SKU ZED-121210, on the profile top pitch bracket; lens 42 mm ahead of and 223 mm above the shoulder (moved 20 mm forward on 28 Oct 2026; was 22 mm); pitch hp15 to hp35, baseline hp30, 30 degrees down (was hp25), P-03 rev20.0 items 15, 17 and 18 |
 | Base camera tilt | configuration IDs bt05 / bt10 / bt15, baseline bt10 |
 | Configuration IDs | `column` (`dold_v4_350`, `tl3_400`), `base_plate` (`bp000`, `bp050`), `head_pitch`, `base_tilt`; `mast_id` is gone (no longer used) |
 | Base controller | STM32H723ZG on NUCLEO-H723ZG; the lift is driven on CAN3 through a CAN-to-lift interface module |
