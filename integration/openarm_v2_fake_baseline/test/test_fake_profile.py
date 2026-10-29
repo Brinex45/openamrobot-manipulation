@@ -97,68 +97,6 @@ def test_guard_detects_real_hardware_description():
     with pytest.raises(fp.FakeProfileError, match='non-mock hardware plugin'):
         fp.assert_mock_only(real_urdf)
 
-
-def test_fake_acceleration_overlay_rejects_real_profile():
-    base = {
-        'joint_limits': {
-            'openarm_left_joint1': {
-                'has_acceleration_limits': False,
-                'max_acceleration': 0.0,
-            },
-        },
-    }
-    overlay = {
-        'joint_limits': {
-            'openarm_left_joint1': {
-                'has_acceleration_limits': True,
-                'max_acceleration': 20.0,
-            },
-        },
-    }
-    with pytest.raises(fp.FakeProfileError, match='real profiles must reject it'):
-        fp.merge_fake_acceleration_overlay(base, overlay, profile='real')
-
-
-def test_fake_acceleration_overlay_merges_only_known_joints():
-    base = {
-        'joint_limits': {
-            'openarm_left_joint1': {
-                'has_acceleration_limits': False,
-                'max_acceleration': 0.0,
-                'max_velocity': 16.754666,
-            },
-        },
-    }
-    overlay = {
-        'joint_limits': {
-            'openarm_left_joint1': {
-                'has_acceleration_limits': True,
-                'max_acceleration': 20.0,
-            },
-        },
-    }
-    merged = fp.merge_fake_acceleration_overlay(base, overlay, profile='fake')
-    joint = merged['joint_limits']['openarm_left_joint1']
-    assert joint['has_acceleration_limits'] is True
-    assert joint['max_acceleration'] == 20.0
-    assert joint['max_velocity'] == 16.754666
-    assert base['joint_limits']['openarm_left_joint1']['has_acceleration_limits'] is False
-
-
-def test_fake_acceleration_overlay_rejects_unknown_joint():
-    base = {'joint_limits': {'openarm_left_joint1': {}}}
-    overlay = {
-        'joint_limits': {
-            'openarm_left_joint99': {
-                'has_acceleration_limits': True,
-                'max_acceleration': 20.0,
-            },
-        },
-    }
-    with pytest.raises(fp.FakeProfileError, match='unknown joint'):
-        fp.merge_fake_acceleration_overlay(base, overlay, profile='fake')
-
-
 def test_moveit_controller_mapping_matches_upstream_names():
     share = get_package_share_directory('openarm_bimanual_moveit_config')
     path = os.path.join(share, 'config', 'openarm_v2.0', 'moveit_controllers.yaml')

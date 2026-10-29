@@ -2,13 +2,9 @@
 # Copyright (c) 2026 OpenAMRobot (Botshare LTD)
 """Headless move_group tests using the pinned upstream v2.0 MoveIt config.
 
-Planning and fake execution are tested separately.
-
-The pinned upstream joint_limits.yaml lacks acceleration limits. The fake
-profile applies a synthetic acceleration overlay labelled
-"planning placeholder, not hardware" so headless planning and fake execution
-can be tested. The pinned upstream configuration remains unchanged, and the
-overlay must never be treated as validated hardware limits.
+Planning and fake execution are tested separately. The dependency manifest
+pins the upstream commit that enables MoveIt acceleration limits for v2.0.
+Those upstream values are not real-hardware qualification or safety approval.
 """
 
 import os
@@ -42,13 +38,18 @@ def _named_state(group):
     raise LookupError(f'{NAMED_STATE} not defined for {group} in {SRDF}')
 
 
-def test_root_cause_upstream_joint_limits_lack_acceleration():
-    """Pins the root cause of the xfails above; fails once upstream changes it."""
+def test_upstream_joint_limits_enable_acceleration():
+    """The pinned upstream config must provide positive limits for every actuated joint."""
     with open(os.path.join(MOVEIT_V20, 'joint_limits.yaml')) as f:
         limits = yaml.safe_load(f)['joint_limits']
-    arm_joints = [j for s in fp.ARM_SIDES for j in fp.ARM_JOINTS[s]]
-    assert set(arm_joints) <= set(limits)
-    assert not any(limits[j].get('has_acceleration_limits') for j in arm_joints)
+    actuated_joints = [
+        j for side in fp.ARM_SIDES
+        for j in fp.ARM_JOINTS[side] + fp.GRIPPER_JOINTS[side]
+    ]
+    assert set(actuated_joints) <= set(limits)
+    for joint in actuated_joints:
+        assert limits[joint].get('has_acceleration_limits') is True, joint
+        assert limits[joint].get('max_acceleration', 0) > 0, joint
 
 
 def test_move_group_plan_service_is_up(probe):

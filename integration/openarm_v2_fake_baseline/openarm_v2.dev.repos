@@ -19,9 +19,9 @@ repositories:
   openarm_ros2:
     type: git
     url: https://github.com/enactic/openarm_ros2.git
-    # main @ 2026-06-29, "Bump actions/cache from 5 to 6 (#95)"; includes
-    # 01b9f38 "Support OpenArm 2.0 (#91)". git describe: 0.9.2-5-g4e837e1
-    version: 4e837e1d0dae692ff67b560b69d8d281d7a8d4ed
+    # Pinned to the merge commit for upstream MoveIt acceleration limits (#96).
+    # This enables fake-profile planning; values are not hardware-qualified.
+    version: f0f6b639a65b4d05c1b3055825f4da0205e9330d
   openarm_description:
     type: git
     url: https://github.com/enactic/openarm_description.git
