@@ -40,7 +40,7 @@ The development manifest pins `enactic/openarm_ros2` to `f0f6b639a65b4d05c1b3055
 
 The integration suite includes `test_upstream_joint_limits_enable_acceleration` and headless MoveIt planning and fake-controller execution checks. Passing these tests demonstrates fake-profile planning behaviour only. It does not establish that the acceleration values are appropriate or qualified for physical hardware.
 
-Issue [#10](https://github.com/openAMRobot/openarmrobot-manipulation/issues/10) remains open pending the project's owner-level acceptance and closure decision. The upstream fix and fake-profile tests do not, by themselves, establish physical-device acceptance.
+Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10) remains open pending the project's owner-level acceptance and closure decision. The upstream fix and fake-profile tests do not, by themselves, establish physical-device acceptance.
 
 ## Commands
 
@@ -85,7 +85,7 @@ The clean local rerun passed all four integration suites. The current xUnit XML 
 
 The development dependency manifest now pins `enactic/openarm_ros2` at `f0f6b639a65b4d05c1b3055825f4da0205e9330d`, the upstream merge commit for acceleration limits (PR #96). The integration no longer applies a local synthetic acceleration overlay. The test `test_upstream_joint_limits_enable_acceleration` checks the pinned configuration, and the suite verifies headless planning and fake-controller execution against it.
 
-These checks establish behaviour in the isolated fake-hardware profile only. They do not qualify the upstream acceleration values for a physical robot, nor do they establish physical-device or safety acceptance. Issue [#10](https://github.com/openAMRobot/openarmrobot-manipulation/issues/10) remains open pending the project's owner-level acceptance and closure decision.
+These checks establish behaviour in the isolated fake-hardware profile only. They do not qualify the upstream acceleration values for a physical robot, nor do they establish physical-device or safety acceptance. Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10) remains open pending the project's owner-level acceptance and closure decision.
 
 ## MoveIt gripper execution gap — issue #11 remains open
 
@@ -93,7 +93,7 @@ At the pinned upstream v2.0 revision, `moveit_controllers.yaml` declares the gri
 
 The MoveIt controller configuration needs to use `FollowJointTrajectory` to match the controller setup. The fake-profile suite now plans and executes gripper trajectories through MoveIt for both arms, sends the planned trajectory through the fake execution path, and checks that mock joint state reaches the target. This is local fake-hardware evidence only; it does not prove that the unchanged upstream configuration works, or that real hardware executes gripper actions correctly.
 
-Issue [#11](https://github.com/openAMRobot/openarmrobot-manipulation/issues/11) remains open pending owner review of the fake-profile execution evidence and confirmation of the issue's acceptance criteria. The fake-profile tests do not establish upstream configuration correctness or physical-device acceptance.
+Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11) remains open pending owner review of the fake-profile execution evidence and confirmation of the issue's acceptance criteria. The fake-profile tests do not establish upstream configuration correctness or physical-device acceptance.
 
 ## Not validated by this baseline
 
@@ -106,4 +106,4 @@ Fake trajectory success only shows that mock hardware followed the commanded pos
 - **MoveIt acceleration limits:** Uses the pinned upstream fix; no synthetic local acceleration overlay remains. Fake-profile planning success does not qualify the limits for physical hardware.
 - **MoveIt gripper action execution:** Both grippers have local fake-profile plan-and-execute test coverage; issue #11 remains open pending owner review. Physical-device acceptance remains unverified.
 - **Physical hardware, real CAN operation, and device acceptance:** Not validated.
-- **A3/I1 contract:** Adnan accepted A3/I1 document Revision v2 / I1 API v1.0 and the observation-validity and `CompliantHold` decisions in [PR conversation](https://github.com/openAMRobot/openarmrobot-manipulation/pull/20#issuecomment-6334318786). Canonical I1 interface changes and cross-repository alignment remain outstanding.
+- **A3/I1 contract:** Adnan accepted A3/I1 document Revision v2 / I1 API v1.0 and the observation-validity and `CompliantHold` decisions in [PR conversation](https://github.com/openAMRobot/openamrobot-manipulation/pull/20#issuecomment-6334318786). Canonical I1 interface changes and cross-repository alignment remain outstanding.
