@@ -3,23 +3,34 @@
 ## Repository
 - Type and lifecycle: interface / draft work; readiness unassessed (e0faeee).
 - Owner role: common manipulation/Device Package work is owned by Om and Adnan (AGENTS.md at 095e6c7).
-- Verification: `python3 -m unittest discover -s i2/tests -p 'test_*.py' -v`; 103/103 passed on the local working tree (2026-10-28). Hosted CI and commit-specific verification remain separate checks.
+- Current PR head: `39bec760539dfc5e21d01e3c5988b0536c07b04a` on `pr-9`; PR #20 is open and non-draft.
+- Hosted verification: [GitHub Actions run #47](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/40932487384) completed successfully on this exact head; both `repository-quality` and `quality/test` passed. DCO and CLA checks are green.
+- Schema/conformance: 103 tests passed in the local validation recorded 2026-10-28; hosted `quality/test` passed on the current PR head.
+- Fake-hardware integration: fresh local run on 2026-10-29 passed four suites containing 37 individual pytest cases (15 fake-profile, 4 launch-guard, 11 fake-bringup, 7 MoveIt-planning). Colcon's 41-entry summary includes four suite-level entries; it is not 41 individual pytest cases.
 - Package validation: both example packages report VALID with pending values; strict freeze remains blocked by pending values; package validation ran before commit c3abb545 (2026-10-21).
 
 ## Current work
 | Work package | Branch or PR | Status | Next step |
 |---|---|---|---|
-| A5/I2 Device Package | PR #20, pr-9 | Open, non-draft PR | Complete canonical I1 interface follow-up, obtain owner review, and resolve the gripper integration acceptance question. The latest recorded hosted CI pass was on PR head 279f8af; the later merge commit and documentation edits require fresh hosted verification. Runtime/device acceptance remains unverified. |
+| A5/I2 Device Package | PR #20, pr-9 | Open, non-draft PR; current hosted quality checks pass | Complete canonical I1 interface alignment/follow-up; obtain owner acceptance for issue #11 evidence; resolve issue #10 separately. Runtime/device acceptance remains unverified. |
 
 ## Decisions this repository implements
 - LIFT, ARM-MOUNT, CONFIG-IDS: see the [authoritative shared decision register](https://github.com/openAMRobot/.github/blob/main/decisions.yaml). Values and physical acceptance are not inferred here.
 
+## Accepted A3/I1 decisions
+- Adnan accepted A3/I1 Common Manipulation API v1.0, Revision v2, including the observation-validity and `CompliantHold` semantics, in [PR #20 discussion](https://github.com/openAMRobot/openamrobot-manipulation/pull/20#issuecomment-6334318786).
+- These semantic decisions are **accepted, not pending**. False `contact_detected_valid` or `object_detected_valid` means the corresponding observation is unavailable/invalid, not a measured negative.
+- `CompliantHold` is rejected with `ACTION_REJECTED` before device calls or motion unless `has_compliant_control` is true, `compliant_hold` is enabled, and `force_torque_sensing` is declared.
+- The canonical cross-repository I1 interface changes/alignment remain outstanding. That implementation handoff is distinct from the already accepted semantic decisions.
+
 ## Known gaps
-- Contract owner Adnan accepted A3/I1 document Revision v2 / I1 API v1.0 and the decisions for `contact_detected_valid`, `object_detected_valid`, and CompliantHold rejection conditions in the PR #20 discussion. The corresponding canonical interface changes in the owning I1 contract repository remain outstanding.
-- The latest uploaded snapshot changes both OpenArm `GripperActionController` entries to use the required singular `joint` parameter and adds a regression test against the selected controller type and actual parameters.
-- Added I2 observation-validity conformance vectors and a regression that checks the accepted unavailable-versus-measured-negative cases. These vectors specify expected semantics; they do not exercise a runtime I1 implementation. These runtime observation fields must not be added to the device-package declaration schema.
-- Hosted workflow run #41 passed both `repository-quality / quality/test` and `repository-quality` on PR head `279f8af`. This predates merge commit `b981425` and the documentation edits; fresh hosted verification is required after pushing. The schema/conformance suite and ROS/fake-hardware integration suite are separate checks.
-- A clean local fake-hardware integration rerun passed all four suites. The four current xUnit XML files contain 37 test cases (15 fake-profile, 4 launch-guard, 11 fake-bringup, 7 MoveIt-planning). `colcon test-result --verbose` reported 41, which conflicts with the XML total and remains unexplained; do not report 41 as the verified case count.
+
+- The OpenArm `GripperActionController` entries use the required singular `joint` parameter, with regression coverage against the selected controller type and actual parameters.
+- I2 observation-validity conformance vectors specify the accepted unavailable-versus-measured-negative cases. They do not exercise a runtime I1 implementation. Runtime observation fields must not be added to the Device Package declaration schema.
+- Hosted workflow run [#47](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/40932487384) passed both `repository-quality` and `quality/test` on PR head `39bec760539dfc5e21d01e3c5988b0536c07b04a`. DCO and CLA checks are green.
+- The local fake-hardware integration rerun passed four suites with 37 individual pytest cases (15 fake-profile, 4 launch-guard, 11 fake-bringup, 7 MoveIt-planning). Colcon reports 41 total entries because it includes four suite-level entries; these are not additional pytest cases.
+- Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11): owner acceptance of the fake MoveIt gripper-execution evidence remains open.
+- Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10): upstream acceleration-limit owner acceptance remains open. The values are not physically qualified by this PR.
 
 ## Not verified
 - ROS/common-server/device end-to-end acceptance, hardware qualification of the pinned upstream acceleration limits, real hardware operation, physical-device acceptance, and safety qualification are not established by schema tests or fake hardware.
