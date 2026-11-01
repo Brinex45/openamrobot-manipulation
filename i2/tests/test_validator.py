@@ -419,6 +419,64 @@ class TestGripperRejections(Base):
         self.assertRejects(self.mutate("so101", f), "gripper.gripper_id is required")
 
 
+class TestMalformedCapabilities(Base):
+    MALFORMED_DOCUMENTS = {
+        "empty": "",
+        "comment_only": "# capabilities intentionally empty\n",
+        "yaml_null": "null\n",
+        "list_root": "- item\n",
+        "scalar_root": "invalid_scalar\n",
+        "missing_capabilities": "{}\n",
+        "null_capabilities": "capabilities: null\n",
+    }
+
+    def test_malformed_capabilities_rejected_in_normal_and_strict_modes(self):
+        for package in PKGS:
+            # Make one temporary copy per package, not one per subtest.
+            root = self.copy_pkg(package)
+            caps_path = root / "capabilities" / "capabilities.yaml"
+
+            for case, document in self.MALFORMED_DOCUMENTS.items():
+                for strict in (False, True):
+                    with self.subTest(
+                        package=package,
+                        case=case,
+                        strict=strict,
+                    ):
+                        caps_path.write_text(document)
+
+                        rep = vp.validate_package(root, strict=strict)
+
+                        self.assertIsNotNone(rep)
+                        self.assertFalse(
+                            rep.valid,
+                            f"{package}/{case} unexpectedly validated "
+                            f"(strict={strict})",
+                        )
+                        self.assertEqual(
+                            rep.exit_code,
+                            1,
+                            f"{package}/{case}: expected exit code 1, "
+                            f"got {rep.exit_code}; errors={rep.errors}",
+                        )
+                        self.assertTrue(
+                            rep.errors,
+                            f"{package}/{case}: expected a validation error",
+                        )
+
+
+    def test_valid_capabilities_remain_valid_in_both_modes(self):
+        for package in PKGS:
+            for strict in (False, True):
+                with self.subTest(package=package, strict=strict):
+                    rep = vp.validate_package(PKGS[package], strict=strict)
+
+                    self.assertTrue(
+                        rep.valid,
+                        f"{package}: valid capability document rejected: "
+                        f"{rep.errors}",
+                    )
+
 # ------------------------------------------------------ reject: capabilities
 class TestCapabilityRejections(Base):
     def test_typo_action_name(self):

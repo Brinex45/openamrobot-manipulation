@@ -428,26 +428,52 @@ def validate_package(root: str | Path, strict: bool = False) -> Report:
     caps = None
     caps_rel = d["capabilities"]["config"]
     caps_path = root / caps_rel
-    if caps_path.is_file():
+
+    if not caps_path.is_file():
+        rep.err(f"{caps_rel}: capabilities file does not exist")
+    else:
         try:
             caps = _load_yaml(caps_path)
-        except yaml.YAMLError as e:
-            rep.err(f"{caps_rel}: not valid YAML: {e}")
-    if isinstance(caps, dict):
-        if "supported_actions" in caps or "supported_actions" in caps.get("capabilities", {}):
-            rep.err(f"{caps_rel}: supported_actions must not be declared; it is derived from capabilities.actions")
+        except (yaml.YAMLError, OSError, UnicodeError) as e:
+            rep.err(f"{caps_rel}: cannot load valid YAML: {e}")
+            caps = None
+
+    if caps is None:
+        rep.err(
+            f"{caps_rel}: capabilities document is empty or null; "
+            "expected a YAML mapping"
+        )
+    elif not isinstance(caps, dict):
+        rep.err(
+            f"{caps_rel}: capabilities document root must be a YAML mapping, "
+            f"got {type(caps).__name__}"
+        )
+        caps = None
+    else:
+        inner_caps = caps.get("capabilities")
+
+        if (
+            "supported_actions" in caps
+            or (
+                isinstance(inner_caps, dict)
+                and "supported_actions" in inner_caps
+            )
+        ):
+            rep.err(
+                f"{caps_rel}: supported_actions must not be declared; "
+                "it is derived from capabilities.actions"
+            )
+
         cerrs = _schema_errors(caps, "capabilities.schema.json")
         for e in cerrs:
             rep.err(f"capabilities schema {e}")
+
         if cerrs:
             caps = None
-    else:
-        caps = None
 
     _cross_checks(manifest, caps, rep)
     _collect_pending(manifest, caps, rep)
-    if strict and rep.pending:
-        pass  # exit_code handles it; the list is the explanation
+
     return rep
 
 
