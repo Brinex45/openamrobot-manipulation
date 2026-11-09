@@ -1,5 +1,5 @@
 # OpenArm 2.0 Device Package manifest. Unresolved integration values remain PENDING.
-schema_version: "0.5"
+schema_version: "0.6"
 i1_api_version: "1.0"
 
 device:
@@ -51,7 +51,6 @@ ros2_control:
   manipulator_joints:
     c8b217e5-49cc-58ca-bafe-fae6c6192900: [openarm_left_joint1, openarm_left_joint2, openarm_left_joint3, openarm_left_joint4, openarm_left_joint5, openarm_left_joint6, openarm_left_joint7]
     9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7: [openarm_right_joint1, openarm_right_joint2, openarm_right_joint3, openarm_right_joint4, openarm_right_joint5, openarm_right_joint6, openarm_right_joint7]
-  gripper_joints: [openarm_left_finger_joint1, openarm_right_finger_joint1]
   command_interfaces: [position]
   state_interfaces: [position, velocity]
   controllers:
@@ -75,17 +74,27 @@ moveit:
   joint_limits: moveit/joint_limits.yaml
   end_effectors: PENDING
 
-gripper:
-  has_gripper: true
-  gripper_type: PENDING
-  gripper_id: PENDING
-  joint_count: 2
-  command_interfaces: PENDING
-  state_interfaces: PENDING
-  supported_commands: [OPEN, CLOSE, GOTO_POSITION]
-  reports_effort: PENDING
-  contact_detection: PENDING
-  object_detection: PENDING
+grippers:
+  - gripper_id: openarm_left_gripper
+    manipulator_id: c8b217e5-49cc-58ca-bafe-fae6c6192900
+    gripper_type: PENDING
+    joints: [openarm_left_finger_joint1]
+    command_interfaces: PENDING
+    state_interfaces: PENDING
+    supported_commands: [OPEN, CLOSE, GOTO_POSITION]
+    reports_effort: PENDING
+    contact_detection: PENDING
+    object_detection: PENDING
+  - gripper_id: openarm_right_gripper
+    manipulator_id: 9bc5c18a-96f1-53be-a9b9-6c60a3f8c4c7
+    gripper_type: PENDING
+    joints: [openarm_right_finger_joint1]
+    command_interfaces: PENDING
+    state_interfaces: PENDING
+    supported_commands: [OPEN, CLOSE, GOTO_POSITION]
+    reports_effort: PENDING
+    contact_detection: PENDING
+    object_detection: PENDING
 
 capabilities:
   config: capabilities/capabilities.yaml
@@ -109,5 +118,5 @@ pending:
   - {path: /device/workspace_envelope, reason: "TBC (BOUNDING_BOX or REACH_RADIUS)"}
   - {path: /moveit/planning_groups, reason: "Group names and mapping TBC"}
   - {path: /moveit/named_poses, reason: "Named poses and stow_pose TBC; empty until confirmed"}
-  - {path: /gripper/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION per A5 s14; FORCE_LIMITED_CLOSE and effort reporting TBC"}
-  - {path: /gripper/joint_count, reason: "Gripper-per-manipulator modelling for a dual-arm device is not defined in v0.5"}
+  - {path: /grippers/0/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION per A5 s14; FORCE_LIMITED_CLOSE and effort reporting TBC"}
+  - {path: /grippers/1/supported_commands, reason: "OPEN/CLOSE/GOTO_POSITION per A5 s14; FORCE_LIMITED_CLOSE and effort reporting TBC"}

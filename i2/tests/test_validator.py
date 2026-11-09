@@ -200,7 +200,7 @@ class TestBothPackages(Base):
 # ------------------------------------------------------------- reject: manifest
 class TestManifestRejections(Base):
     def test_missing_required_section(self):
-        self.assertRejects(self.mutate("so101", lambda m: m.pop("gripper")), "gripper")
+        self.assertRejects(self.mutate("so101", lambda m: m.pop("grippers")), "grippers")
 
     def test_missing_maintainer(self):
         self.assertRejects(self.mutate("so101", lambda m: m["device"].pop("maintainer")), "maintainer")
@@ -218,7 +218,7 @@ class TestManifestRejections(Base):
         self.assertRejects(self.mutate("so101", lambda m: m.update(schema_version="1.0")), "incompatible")
 
     def test_version_minor_newer(self):
-        self.assertRejects(self.mutate("so101", lambda m: m.update(schema_version="0.6")), "expected 0.5")
+        self.assertRejects(self.mutate("so101", lambda m: m.update(schema_version="0.7")), "expected 0.6")
 
     def test_i1_major_mismatch(self):
         self.assertRejects(self.mutate("so101", lambda m: m.update(i1_api_version="2.0")), "I1 api version incompatible")
@@ -333,20 +333,33 @@ class TestJointRejections(Base):
             m["ros2_control"]["joints"].remove("wrist_roll")
         self.assertRejects(self.mutate("so101", f), "missing from ros2_control.joints")
 
-    def test_gripper_joint_count_mismatch(self):
+    def test_gripper_joint_missing_from_ros2_control_joints(self):
         def f(m):
-            m["gripper"]["joint_count"] = 2
-        self.assertRejects(self.mutate("so101", f), "joint_count")
+            m["grippers"][0]["joints"] = ["missing_gripper_joint"]
+        self.assertRejects(self.mutate("so101", f), "gripper joint")
 
-    def test_no_gripper_but_gripper_joints(self):
+    def test_unassigned_joint_is_rejected_when_grippers_empty(self):
         def f(m):
-            m["gripper"] = {"has_gripper": False}
-        self.assertRejects(self.mutate("so101", f), "gripper_joints must be empty or absent")
+            m["grippers"] = []
+        self.assertRejects(self.mutate("so101", f), "neither an arm joint nor a gripper joint")
 
-    def test_no_gripper_other_fields_must_be_omitted(self):
+    def test_multiple_grippers_for_one_manipulator_are_rejected(self):
+        def add_duplicate(m):
+            duplicate = dict(m["grippers"][0])
+            duplicate["gripper_id"] = "second_left_gripper"
+            m["grippers"].append(duplicate)
+
+        self.assertRejects(
+            self.mutate("openarm", add_duplicate),
+            "more than one gripper",
+        )
+
+    def test_duplicate_gripper_joint_ownership_is_rejected(self):
         def f(m):
-            m["gripper"]["has_gripper"] = False
-        self.assertRejects(self.mutate("so101", f), "other gripper fields must be omitted")
+            duplicate = dict(m["grippers"][0])
+            duplicate["gripper_id"] = "second_gripper"
+            m["grippers"].append(duplicate)
+        self.assertRejects(self.mutate("so101", f), "belongs to more than one gripper")
 
     def test_unknown_interface_name(self):
         def f(m):
@@ -373,18 +386,21 @@ class TestJointRejections(Base):
 class TestGripperRejections(Base):
     def test_unknown_gripper_command(self):
         def f(m):
-            m["gripper"]["supported_commands"] = ["OPEN", "UNKNOWN"]
+            m["grippers"][0]["supported_commands"] = ["OPEN", "UNKNOWN"]
         self.assertRejects(self.mutate("so101", f), "supported_commands")
 
     def test_lowercase_gripper_command(self):
         def f(m):
-            m["gripper"]["supported_commands"] = ["open"]
+            m["grippers"][0]["supported_commands"] = ["open"]
         self.assertRejects(self.mutate("so101", f), "supported_commands")
 
     def test_gripper_command_supported_without_gripper(self):
         def f(m):
-            m["gripper"] = {"has_gripper": False}
-            m["ros2_control"].pop("gripper_joints")
+            m["grippers"] = []
+            m["pending"] = [
+                item for item in m["pending"]
+                if not item["path"].startswith("/grippers/")
+            ]
             m["ros2_control"]["joints"].remove("gripper")
             m["moveit"].pop("end_effectors")
         def g(c):
@@ -394,8 +410,11 @@ class TestGripperRejections(Base):
 
     def test_no_gripper_requires_unsupported_declaration(self):
         def f(m):
-            m["gripper"] = {"has_gripper": False}
-            m["ros2_control"].pop("gripper_joints")
+            m["grippers"] = []
+            m["pending"] = [
+                item for item in m["pending"]
+                if not item["path"].startswith("/grippers/")
+            ]
             m["ros2_control"]["joints"].remove("gripper")
             m["moveit"].pop("end_effectors")
         # gripper_command is still "planned" -> must be explicitly unsupported
@@ -403,9 +422,8 @@ class TestGripperRejections(Base):
 
     def test_no_gripper_with_unsupported_declaration_is_valid(self):
         def f(m):
-            m["gripper"] = {"has_gripper": False}
-            m["pending"] = [p for p in m["pending"] if not p["path"].startswith("/gripper")]
-            m["ros2_control"].pop("gripper_joints")
+            m["grippers"] = []
+            m["pending"] = [p for p in m["pending"] if not p["path"].startswith("/grippers/")]
             m["ros2_control"]["joints"].remove("gripper")
             m["moveit"].pop("end_effectors")
         def g(c):
@@ -415,8 +433,8 @@ class TestGripperRejections(Base):
 
     def test_gripper_required_fields(self):
         def f(m):
-            m["gripper"].pop("gripper_id")
-        self.assertRejects(self.mutate("so101", f), "gripper.gripper_id is required")
+            m["grippers"][0].pop("gripper_id")
+        self.assertRejects(self.mutate("so101", f), "gripper_id")
 
 
 class TestMalformedCapabilities(Base):
@@ -731,8 +749,8 @@ class TestSimAndPendingRejections(Base):
             m.update(fixed)
             m["device"]["configuration"]["mounting"] = "fixed"
             m["device"]["workspace_envelope"] = {"type": "REACH_RADIUS", "reach_radius": 0.4}
-            m["gripper"].update(command_interfaces=["position"], state_interfaces=["position"],
-                                reports_effort=False, contact_detection=False, object_detection=False)
+            m["grippers"][0].update(command_interfaces=["position"], state_interfaces=["position"],
+                                    reports_effort=False, contact_detection=False, object_detection=False)
             m.pop("pending")
 
         def g(c):
@@ -764,6 +782,133 @@ class TestActionRejected(Base):
         self.assertIs(res["motion"], False)              # no motion attempted
         self.assertIs(res["dispatch"], False)
 
+    def _openarm_gripper_resolver_fixture(self):
+        m, c = self.load("openarm")
+        c["capabilities"]["actions"]["gripper_command"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+        return m, c
+
+    def test_manipulator_selector_routes_left_and_right_grippers(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        expected = {
+            m["device"]["manipulators"][0]["manipulator_id"]: "openarm_left_gripper",
+            m["device"]["manipulators"][1]["manipulator_id"]: "openarm_right_gripper",
+        }
+
+        for manipulator_id, gripper_id in expected.items():
+            with self.subTest(manipulator_id=manipulator_id):
+                res = vp.resolve_request(
+                    m, c, "gripper_command",
+                    gripper_command="OPEN",
+                    manipulator_selector={
+                        "selector_type": 1,
+                        "manipulator_id": manipulator_id,
+                    },
+                )
+                self.assertTrue(res["dispatch"])
+                self.assertTrue(res["device_invoked"])
+                self.assertEqual(res["resolved_gripper_id"], gripper_id)
+
+    def test_group_selector_routes_left_and_right_grippers(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        expected = {
+            "LEFT": "openarm_left_gripper",
+            "RIGHT": "openarm_right_gripper",
+        }
+
+        for group_id, gripper_id in expected.items():
+            with self.subTest(group_id=group_id):
+                res = vp.resolve_request(
+                    m, c, "gripper_command",
+                    gripper_command="CLOSE",
+                    manipulator_selector={
+                        "selector_type": 2,
+                        "group_id": group_id,
+                    },
+                )
+                self.assertTrue(res["dispatch"])
+                self.assertTrue(res["device_invoked"])
+                self.assertEqual(res["resolved_gripper_id"], gripper_id)
+
+    def test_bimanual_group_rejected_for_single_gripper_command(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        res = vp.resolve_request(
+            m, c, "gripper_command",
+            gripper_command="OPEN",
+            manipulator_selector={
+                "selector_type": 2,
+                "group_id": "BIMANUAL",
+            },
+        )
+
+        self.assertRejectedNoMotion(res, "gripper_command")
+        self.assertIn("coordinated multi-gripper commands are not defined", res["message"])
+
+    def test_unknown_and_invalid_numeric_selector_types_are_rejected(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+        manipulator_id = m["device"]["manipulators"][0]["manipulator_id"]
+
+        for selector_type in (0, 3, 255):
+            with self.subTest(selector_type=selector_type):
+                res = vp.resolve_request(
+                    m, c, "gripper_command",
+                    gripper_command="OPEN",
+                    manipulator_selector={
+                        "selector_type": selector_type,
+                        "manipulator_id": manipulator_id,
+                    },
+                )
+                self.assertRejectedNoMotion(res, "gripper_command")
+
+    def test_boolean_selector_type_is_rejected(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        for selector_type in (True, False):
+            with self.subTest(selector_type=selector_type):
+                res = vp.resolve_request(
+                    m, c, "gripper_command",
+                    gripper_command="OPEN",
+                    manipulator_selector={
+                        "selector_type": selector_type,
+                        "manipulator_id": m["device"]["manipulators"][0]["manipulator_id"],
+                    },
+                )
+                self.assertRejectedNoMotion(res, "gripper_command")
+
+    def test_non_integer_selector_type_is_rejected(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        for selector_type in ("1", 1.0, None):
+            with self.subTest(selector_type=selector_type):
+                res = vp.resolve_request(
+                    m, c, "gripper_command",
+                    gripper_command="OPEN",
+                    manipulator_selector={
+                        "selector_type": selector_type,
+                        "manipulator_id": m["device"]["manipulators"][0]["manipulator_id"],
+                    },
+                )
+                self.assertRejectedNoMotion(res, "gripper_command")
+
+    def test_group_selector_rejects_unknown_group(self):
+        m, c = self._openarm_gripper_resolver_fixture()
+
+        res = vp.resolve_request(
+            m, c, "gripper_command",
+            gripper_command="OPEN",
+            manipulator_selector={
+                "selector_type": 2,
+                "group_id": "UNKNOWN_GROUP",
+            },
+        )
+
+        self.assertRejectedNoMotion(res, "gripper_command")
+
     def test_unsupported_contact_actions_rejected_on_so101(self):
         m, c = self.load("so101")
         for a in ("move_until_contact", "compliant_hold"):
@@ -772,14 +917,19 @@ class TestActionRejected(Base):
     def test_so101_gripper_command_rejected_when_no_commands_are_supported(self):
         m, c = self.load("so101")
 
-        self.assertEqual(m["gripper"]["supported_commands"], [])
+        self.assertEqual(m["grippers"][0]["supported_commands"], [])
 
         # Isolate the supported_commands gate. The real fixture remains
         # planned until the common I1 GripperCommand contract is validated.
         c["capabilities"]["actions"]["gripper_command"]["status"] = "supported"
 
+        selector = {
+            "selector_type": 1,
+            "manipulator_id": m["grippers"][0]["manipulator_id"],
+        }
         res = vp.resolve_request(
-            m, c, "gripper_command", gripper_command="OPEN"
+            m, c, "gripper_command", gripper_command="OPEN",
+            manipulator_selector=selector,
         )
 
         self.assertRejectedNoMotion(res, "gripper_command")
@@ -803,17 +953,49 @@ class TestActionRejected(Base):
 
     def test_gripper_command_outside_supported_commands_rejected(self):
         m, c = self.load("so101")
-        m["gripper"]["supported_commands"] = ["OPEN"]
+        m["grippers"][0]["supported_commands"] = ["OPEN"]
         c["capabilities"]["actions"]["gripper_command"] = {"status": "supported", "validation": validated()}
+        selector = {
+            "selector_type": 1,
+            "manipulator_id": m["grippers"][0]["manipulator_id"],
+        }
         self.assertRejectedNoMotion(
-            vp.resolve_request(m, c, "gripper_command", gripper_command="FORCE_LIMITED_CLOSE"), "gripper_command")
-        self.assertTrue(vp.resolve_request(m, c, "gripper_command", gripper_command="OPEN")["dispatch"])
+            vp.resolve_request(
+                m, c, "gripper_command",
+                gripper_command="FORCE_LIMITED_CLOSE",
+                manipulator_selector=selector,
+            ),
+            "gripper_command",
+        )
+        result = vp.resolve_request(
+            m, c, "gripper_command", gripper_command="OPEN",
+            manipulator_selector=selector,
+        )
+        self.assertTrue(result["dispatch"])
+        self.assertEqual(result["resolved_gripper_id"], "so101_gripper")
 
     def test_no_gripper_rejects_any_gripper_command(self):
         m, c = self.load("so101")
-        m["gripper"] = {"has_gripper": False}
-        c["capabilities"]["actions"]["gripper_command"] = {"status": "supported", "validation": validated()}
-        self.assertRejectedNoMotion(vp.resolve_request(m, c, "gripper_command", gripper_command="OPEN"), "gripper_command")
+        m["grippers"] = []
+        c["capabilities"]["actions"]["gripper_command"] = {
+            "status": "supported",
+            "validation": validated(),
+        }
+
+        selector = {
+            "selector_type": 1,
+            "manipulator_id": m["device"]["manipulators"][0]["manipulator_id"],
+        }
+
+        res = vp.resolve_request(
+            m,
+            c,
+            "gripper_command",
+            gripper_command="OPEN",
+            manipulator_selector=selector,
+        )
+
+        self.assertRejectedNoMotion(res, "gripper_command")
 
     def test_contact_rejected_when_ft_unknown_even_if_declared_supported(self):
         m, c = self.load("so101")

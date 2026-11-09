@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""I2 Device Package validator (draft v0.5).
+"""I2 Device Package validator (draft v0.6).
 
 One JSON Schema pair + this checker is run unchanged for every device package.
 
@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover - fallback path is what runs in the sand
     _jsonschema = None
 
 PENDING = "PENDING"
-VALIDATOR_SCHEMA_VERSION = (0, 5)   # I2 contract (major, minor) this validator implements
+VALIDATOR_SCHEMA_VERSION = (0, 6)   # I2 contract (major, minor) this validator implements
 VALIDATOR_I1_VERSION = (1, 0)       # I1 API version this validator implements
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "schema"
 
@@ -279,11 +279,13 @@ def derive_supported_actions(caps: dict) -> list[str]:
 
 
 def resolve_request(manifest: dict, caps: dict, action: str, *,
-                    gripper_command: str | None = None, dev_test_enabled: bool = False) -> dict:
-    """Reference for A5 section 13: what the common server does with a request.
+                    gripper_command: str | None = None,
+                    manipulator_selector: dict | None = None,
+                    dev_test_enabled: bool = False) -> dict:
+    """Reference oracle for capability gating and I1 gripper selector resolution.
 
-    Unsupported -> ACTION_REJECTED, message names the capability, device never invoked,
-    no motion. (Jonathan's UNSUPPORTED_CAPABILITY is not an I1 code; it surfaces as this.)
+    A gripper command must resolve to exactly one gripper before dispatch.
+    This function never invokes hardware.
     """
     if action in COMMON_SERVER_ACTIONS:
         return {"result": None, "dispatch": True, "device_invoked": True, "motion": None}
@@ -311,11 +313,73 @@ def resolve_request(manifest: dict, caps: dict, action: str, *,
         return reject("force_torque_sensing is not available on this device")
     if action == "compliant_hold" and c.get("has_compliant_control") is not True:
         return reject("has_compliant_control is not explicitly true")
+
     if action == "gripper_command":
-        if not manifest["gripper"]["has_gripper"]:
-            return reject("device has no gripper")
-        if gripper_command not in manifest["gripper"].get("supported_commands", []):
-            return reject(f"gripper command {gripper_command!r} not in supported_commands")
+        grippers = manifest.get("grippers", [])
+        if not grippers:
+            return reject("device has no grippers")
+        if not isinstance(manipulator_selector, dict):
+            return reject("manipulator_selector is required")
+
+        selector_type = manipulator_selector.get("selector_type")
+        selected_ids = []
+
+        # Reject Python booleans and non-integers explicitly:
+        # bool is a subclass of int, so True == 1 in Python.
+        if type(selector_type) is not int or not 0 <= selector_type <= 255:
+            return reject(f"invalid selector_type {selector_type!r}")
+
+        # I1 ManipulatorSelector.msg uses uint8 enum values:
+        # UNKNOWN=0, MANIPULATOR=1, GROUP=2.
+        if selector_type == 1:
+            manipulator_id = manipulator_selector.get("manipulator_id")
+            declared_ids = {
+                item["manipulator_id"] for item in manifest["device"]["manipulators"]
+            }
+            if manipulator_id not in declared_ids:
+                return reject(f"unknown manipulator_id {manipulator_id!r}")
+            selected_ids = [manipulator_id]
+
+        elif selector_type == 2:
+            group_id = manipulator_selector.get("group_id")
+            groups = {
+                item["group_id"]: item["members"]
+                for item in manifest["device"].get("groups", [])
+            }
+            if group_id not in groups:
+                return reject(f"unknown group_id {group_id!r}")
+            selected_ids = groups[group_id]
+            if len(selected_ids) != 1:
+                return reject(
+                    f"group {group_id!r} selects {len(selected_ids)} manipulators; "
+                    "coordinated multi-gripper commands are not defined"
+                )
+        else:
+            return reject(f"invalid selector_type {selector_type!r}")
+
+        selected_grippers = [
+            g for g in grippers if g["manipulator_id"] in selected_ids
+        ]
+        if len(selected_grippers) != 1:
+            return reject(
+                f"selector must resolve to exactly one gripper; found {len(selected_grippers)}"
+            )
+
+        selected_gripper = selected_grippers[0]
+        if gripper_command not in selected_gripper.get("supported_commands", []):
+            return reject(
+                f"gripper command {gripper_command!r} not in "
+                f"supported_commands for {selected_gripper['gripper_id']}"
+            )
+
+        return {
+            "result": None,
+            "dispatch": True,
+            "device_invoked": True,
+            "motion": None,
+            "resolved_gripper_id": selected_gripper["gripper_id"],
+        }
+
     return {"result": None, "dispatch": True, "device_invoked": True, "motion": None}
 
 
@@ -478,7 +542,9 @@ def validate_package(root: str | Path, strict: bool = False) -> Report:
 
 
 def _cross_checks(m: dict, caps: dict | None, rep: Report) -> None:
-    dev, rc, mv, grip, sim = m["device"], m["ros2_control"], m["moveit"], m["gripper"], m["simulation"]
+    dev, rc, mv, grippers, sim = (
+        m["device"], m["ros2_control"], m["moveit"], m["grippers"], m["simulation"]
+    )
 
     # --- manipulators and groups -------------------------------------------
     ids = [x["manipulator_id"] for x in dev["manipulators"]]
@@ -509,9 +575,9 @@ def _cross_checks(m: dict, caps: dict | None, rep: Report) -> None:
     # --- joints -------------------------------------------------------------
     joints = rc["joints"]
     mj = rc["manipulator_joints"]
-    gj = rc.get("gripper_joints", [])
     if set(mj) != id_set:
         rep.err("ros2_control.manipulator_joints keys must be exactly the declared manipulator_ids")
+
     seen_arm: dict[str, str] = {}
     for x in dev["manipulators"]:
         lst = mj.get(x["manipulator_id"], [])
@@ -523,33 +589,44 @@ def _cross_checks(m: dict, caps: dict | None, rep: Report) -> None:
             seen_arm[j] = x["manipulator_id"]
             if j not in joints:
                 rep.err(f"arm joint {j!r} missing from ros2_control.joints")
-    for j in gj:
-        if j not in joints:
-            rep.err(f"gripper joint {j!r} missing from ros2_control.joints")
-        if j in seen_arm:
-            rep.err(f"gripper joint {j!r} must not appear in manipulator_joints")
+
+    gripper_ids: set[str] = set()
+    seen_gripper: dict[str, str] = {}
+    seen_manipulator_gripper: dict[str, str] = {}
+    for g in grippers:
+        gid = g["gripper_id"]
+        manipulator_id = g["manipulator_id"]
+
+        if manipulator_id in seen_manipulator_gripper:
+            rep.err(
+                f"manipulator {manipulator_id!r} has more than one gripper: "
+                f"{seen_manipulator_gripper[manipulator_id]!r} and {gid!r}"
+            )
+        else:
+            seen_manipulator_gripper[manipulator_id] = gid
+
+        if gid in gripper_ids:
+            rep.err(f"duplicate gripper_id {gid!r}")
+        gripper_ids.add(gid)
+
+        if manipulator_id not in id_set:
+            rep.err(f"gripper {gid}: manipulator_id {manipulator_id!r} is not declared")
+
+        for j in g["joints"]:
+            if j in seen_gripper:
+                rep.err(f"gripper joint {j!r} belongs to more than one gripper")
+            seen_gripper[j] = gid
+            if j not in joints:
+                rep.err(f"gripper joint {j!r} missing from ros2_control.joints")
+            if j in seen_arm:
+                rep.err(f"gripper joint {j!r} must not appear in manipulator_joints")
+
     for j in joints:
-        if j not in seen_arm and j not in gj:
+        if j not in seen_arm and j not in seen_gripper:
             rep.err(f"joint {j!r} is neither an arm joint nor a gripper joint")
 
-    # --- gripper ------------------------------------------------------------
-    has_g = grip["has_gripper"]
-    other = [k for k in grip if k != "has_gripper"]
-    if has_g:
-        need = ["gripper_type", "gripper_id", "joint_count", "command_interfaces", "state_interfaces",
-                "supported_commands", "reports_effort", "contact_detection", "object_detection"]
-        for k in need:
-            if k not in grip:
-                rep.err(f"gripper.{k} is required when has_gripper is true")
-        if "joint_count" in grip and grip["joint_count"] != len(gj):
-            rep.err(f"gripper.joint_count ({grip['joint_count']}) must equal len(ros2_control.gripper_joints) ({len(gj)})")
-        if "end_effectors" not in mv:
-            rep.err("moveit.end_effectors is required when a gripper is present")
-    else:
-        if other:
-            rep.err(f"has_gripper is false: other gripper fields must be omitted ({', '.join(other)})")
-        if gj:
-            rep.err("has_gripper is false: ros2_control.gripper_joints must be empty or absent")
+    if grippers and "end_effectors" not in mv:
+        rep.err("moveit.end_effectors is required when a gripper is present")
 
     # --- moveit ---------------------------------------------------------------
     pg_names = [g["name"] for g in mv["planning_groups"]]
@@ -640,8 +717,8 @@ def _cross_checks(m: dict, caps: dict | None, rep: Report) -> None:
         if st in ("supported", "experimental"):
             _gate(name, st, acts, c, m, id_set, arm_cover, named, rep)
 
-    if not has_g and acts["gripper_command"]["status"] != "unsupported":
-        rep.err("has_gripper is false: gripper_command must be declared unsupported with a reason")
+    if not grippers and acts["gripper_command"]["status"] != "unsupported":
+        rep.err("no grippers are declared: gripper_command must be declared unsupported with a reason")
 
 
 def _gate(name, st, acts, c, m, id_set, arm_cover, named, rep) -> None:
@@ -652,9 +729,9 @@ def _gate(name, st, acts, c, m, id_set, arm_cover, named, rep) -> None:
     elif name in ("plan_preview", "execute") and acts["plan"]["status"] not in plan_ok:
         rep.err(f"actions.{name}: {st} requires plan to be {' or '.join(sorted(plan_ok))}")
     elif name == "gripper_command":
-        g = m["gripper"]
-        if not g["has_gripper"] or not g.get("supported_commands"):
-            rep.err(f"actions.{name}: {st} requires has_gripper true and non-empty supported_commands")
+        grippers = m["grippers"]
+        if not any(g.get("supported_commands") for g in grippers):
+            rep.err(f"actions.{name}: {st} requires at least one gripper with non-empty supported_commands")
     elif name == "cartesian_motion":
         uncovered = id_set - arm_cover
         if uncovered:

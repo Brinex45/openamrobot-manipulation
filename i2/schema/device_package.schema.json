@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "device_package.schema.json",
-  "title": "I2 Device Package manifest (draft v0.5)",
+  "title": "I2 Device Package manifest (draft v0.6)",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "i1_api_version", "device", "driver", "ros2_control", "moveit", "gripper", "capabilities", "simulation", "diagnostics", "lerobot"],
+  "required": ["schema_version", "i1_api_version", "device", "driver", "ros2_control", "moveit", "grippers", "capabilities", "simulation", "diagnostics", "lerobot"],
   "properties": {
     "schema_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"},
     "i1_api_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"},
@@ -12,7 +12,7 @@
     "driver": {"$ref": "#/$defs/driver"},
     "ros2_control": {"$ref": "#/$defs/ros2_control"},
     "moveit": {"$ref": "#/$defs/moveit"},
-    "gripper": {"$ref": "#/$defs/gripper"},
+    "grippers": {"type": "array", "items": {"$ref": "#/$defs/gripper"}},
     "capabilities": {
       "type": "object", "additionalProperties": false, "required": ["config"],
       "properties": {"config": {"$ref": "#/$defs/str"}}
@@ -126,7 +126,6 @@
             "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$": {"$ref": "#/$defs/str_list"}
           }
         },
-        "gripper_joints": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/str"}},
         "command_interfaces": {"$ref": "#/$defs/iface_list"},
         "state_interfaces": {"$ref": "#/$defs/iface_list"},
         "controllers": {
@@ -194,12 +193,13 @@
       }
     },
     "gripper": {
-      "type": "object", "additionalProperties": false, "required": ["has_gripper"],
+      "type": "object", "additionalProperties": false,
+      "required": ["gripper_id", "manipulator_id", "gripper_type", "joints", "command_interfaces", "state_interfaces", "supported_commands", "reports_effort", "contact_detection", "object_detection"],
       "properties": {
-        "has_gripper": {"type": "boolean"},
-        "gripper_type": {"$ref": "#/$defs/str"},
         "gripper_id": {"$ref": "#/$defs/str"},
-        "joint_count": {"type": "integer", "minimum": 1},
+        "manipulator_id": {"$ref": "#/$defs/uuid"},
+        "gripper_type": {"$ref": "#/$defs/str"},
+        "joints": {"$ref": "#/$defs/str_list"},
         "command_interfaces": {"anyOf": [{"$ref": "#/$defs/iface_list"}, {"$ref": "#/$defs/pending"}]},
         "state_interfaces": {"anyOf": [{"$ref": "#/$defs/iface_list"}, {"$ref": "#/$defs/pending"}]},
         "supported_commands": {

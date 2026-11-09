@@ -1,6 +1,6 @@
 # SO-101 Device Package manifest. DRAFT: values come from the current sim/fake fixture only.
 # Nothing here claims physical-hardware behaviour. "PENDING" = unresolved, not validated.
-schema_version: "0.5"
+schema_version: "0.6"
 i1_api_version: "1.0"
 
 device:
@@ -30,7 +30,6 @@ ros2_control:
   joints: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll, gripper]
   manipulator_joints:
     331fade9-f14b-5fdf-b804-be72d0f5f905: [shoulder_pan, shoulder_lift, elbow_flex, wrist_flex, wrist_roll]
-  gripper_joints: [gripper]
   command_interfaces: [position]
   state_interfaces: [position]
   controllers:
@@ -54,17 +53,17 @@ moveit:
     - {name: gripper, frame: gripper_frame_link, parent_group: arm}
   # No stow_pose: STOW is not offered.
 
-gripper:
-  has_gripper: true
-  gripper_type: PENDING
-  gripper_id: PENDING
-  joint_count: 1
-  command_interfaces: [position]
-  state_interfaces: [position]
-  supported_commands: []
-  reports_effort: false
-  contact_detection: false
-  object_detection: false
+grippers:
+  - gripper_id: so101_gripper
+    manipulator_id: 331fade9-f14b-5fdf-b804-be72d0f5f905
+    gripper_type: PENDING
+    joints: [gripper]
+    command_interfaces: [position]
+    state_interfaces: [position]
+    supported_commands: []
+    reports_effort: false
+    contact_detection: false
+    object_detection: false
 
 capabilities:
   config: capabilities/capabilities.yaml
@@ -82,9 +81,9 @@ lerobot:
 
 pending:
   - {path: /device/manipulators/0/manipulator_id, reason: "Placeholder UUID; real manipulator_id not yet assigned"}
-  - {path: /gripper/supported_commands, reason: "No common I1 GripperCommand operations have been validated for this position-joint fixture"}
-  - {path: /gripper/command_interfaces, reason: "Sim/fake configuration only"}
-  - {path: /gripper/state_interfaces, reason: "Sim/fake configuration only"}
+  - {path: /grippers/0/supported_commands, reason: "No common I1 GripperCommand operations have been validated for this position-joint fixture"}
+  - {path: /grippers/0/command_interfaces, reason: "Sim/fake configuration only"}
+  - {path: /grippers/0/state_interfaces, reason: "Sim/fake configuration only"}
   - {path: /device/configuration/mounting, reason: "Value set not final (fixed | mobile_base)"}
   - {path: /device/workspace_envelope, reason: "Not yet measured; UNKNOWN type is invalid"}
   - {path: /lerobot/platform_id, reason: "Depends on SO-101 exposure (ros2_control vs LeRobot only)"}

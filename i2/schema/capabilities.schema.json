@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "capabilities.schema.json",
-  "title": "I2 capabilities/capabilities.yaml (draft v0.5)",
+  "title": "I2 capabilities/capabilities.yaml (draft v0.6)",
   "type": "object",
   "additionalProperties": false,
   "required": ["capabilities"],
