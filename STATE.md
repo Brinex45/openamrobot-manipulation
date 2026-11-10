@@ -3,9 +3,9 @@
 ## Repository
 - Type and lifecycle: interface / draft work; readiness unassessed (e0faeee).
 - Owner role: common manipulation/Device Package work is owned by Om and Adnan (AGENTS.md at 095e6c7).
-- Latest reviewed PR source head verified by hosted run #52: `af8bbcea00c82f9e967598ee108becf49c5d56a5` on `pr-9`; PR #20 is open. The DCO sign-off was added locally in amended commit `6bbd52d8d4e83cbf0d26365056f0dc9b7b0e3d25`; fresh hosted verification of that amended commit is pending.
-- Hosted verification: [GitHub Actions run #52](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/42646961863) completed successfully on source head `af8bbcea00c82f9e967598ee108becf49c5d56a5`; both `repository-quality` and `quality/test` passed. This run predates the DCO-only amend to `6bbd52d`; fresh hosted checks for the amended commit are pending.
-- Schema/conformance: 113 tests passed in local validation on 2026-11-09; hosted `quality/test` passed in run #52 on source head `af8bbcea00c82f9e967598ee108becf49c5d56a5`.
+- Latest reviewed PR source head: `fc34183ef04cb5373584da057269d1362f3955c4` on `pr-9`; PR #20 is open. The DCO sign-off is present in the current commit history.
+- Hosted verification: [GitHub Actions run #54](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/42655347477) completed successfully on source head `fc34183ef04cb5373584da057269d1362f3955c4`; both `repository-quality` and `quality/test` passed. The `quality/test` job executed 113 tests: 113 passed, 0 skipped.
+- Schema/conformance: 113 tests passed in local validation on 2026-11-09; hosted `quality/test` passed in run #54 on source head `fc34183ef04cb5373584da057269d1362f3955c4`.
 - Fake-hardware integration: fresh local run on 2026-10-29 passed four suites containing 37 individual pytest cases (15 fake-profile, 4 launch-guard, 11 fake-bringup, 7 MoveIt-planning). Colcon's 41-entry summary includes four suite-level entries; it is not 41 individual pytest cases.
 - Package validation: both example packages report VALID with pending values; strict freeze remains blocked by pending values; package validation ran before commit c3abb545 (2026-10-21).
 
@@ -34,7 +34,7 @@
 
 - The OpenArm `GripperActionController` entries use the required singular `joint` parameter, with regression coverage against the selected controller type and actual parameters.
 - I2 observation-validity conformance vectors specify the accepted unavailable-versus-measured-negative cases. They do not exercise a runtime I1 implementation. Runtime observation fields must not be added to the Device Package declaration schema.
-- Hosted workflow run [#52](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/42646961863) passed both `repository-quality` and `quality/test` on source head `af8bbcea00c82f9e967598ee108becf49c5d56a5`. The DCO sign-off is present on local amended commit `6bbd52d`; fresh hosted verification of that commit is pending.
+- Hosted workflow run [#54](https://github.com/openAMRobot/openamrobot-manipulation/actions/runs/42655347477) passed both `repository-quality` and `quality/test` on source head `fc34183ef04cb5373584da057269d1362f3955c4`; 113 tests executed, 113 passed, 0 skipped. The current commit history includes the DCO sign-off.
 - The local fake-hardware integration rerun passed four suites with 37 individual pytest cases (15 fake-profile, 4 launch-guard, 11 fake-bringup, 7 MoveIt-planning). Colcon reports 41 total entries because it includes four suite-level entries; these are not additional pytest cases.
 - Issue [#11](https://github.com/openAMRobot/openamrobot-manipulation/issues/11): owner acceptance of the fake MoveIt gripper-execution evidence remains open.
 - Issue [#10](https://github.com/openAMRobot/openamrobot-manipulation/issues/10): upstream acceleration-limit owner acceptance remains open. The values are not physically qualified by this PR.
